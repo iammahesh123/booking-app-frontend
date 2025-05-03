@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 
 // Pages
 import HomePage from './pages/HomePage';
+import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 
 // // Authentication routes
 // const LoginPage = React.lazy(() => import('./pages/auth/LoginPage'));
@@ -85,6 +86,15 @@ const App: React.FC = () => {
               element={
                 <ProtectedRoute>
                   <MyBookingsPage />
+                </ProtectedRoute>
+              } 
+            />
+             {/* Admin Routes */}
+             <Route 
+              path="/admin/*" 
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminDashboardPage />
                 </ProtectedRoute>
               } 
             />
