@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { User, CreditCard } from 'lucide-react';
+import { CreditCard } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Navbar from '../../components/layout/Navbar';
@@ -77,7 +77,7 @@ const PassengerInfoPage: React.FC = () => {
                         value={passenger.name}
                         onChange={(e) => handlePassengerChange(index, 'name', e.target.value)}
                         required
-                        icon={<User size={20} />}
+                        // icon={<User size={20} />}
                         placeholder="Enter full name"
                       />
                     </div>

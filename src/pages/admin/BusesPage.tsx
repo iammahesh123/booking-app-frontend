@@ -13,7 +13,7 @@ const BusesPage: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     busNumber: '',
-    busType: 'AC',
+    busType: 'AC' as 'AC' | 'Non-AC' | 'Sleeper' | 'Semi-Sleeper',
     totalSeats: 40,
     amenities: [] as string[],
     operator: ''
@@ -183,7 +183,7 @@ const BusesPage: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700">Bus Type</label>
                 <select
                   value={formData.busType}
-                  onChange={(e) => setFormData({ ...formData, busType: e.target.value as any })}
+                  onChange={(e) => setFormData({ ...formData, busType: e.target.value as 'AC' | 'Non-AC' | 'Sleeper' | 'Semi-Sleeper' })}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
                 >
                   <option value="AC">AC</option>

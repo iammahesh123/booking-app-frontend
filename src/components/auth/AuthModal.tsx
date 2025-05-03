@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import LoginForm from './LoginForm';
 import RegisterForm from './RegisterForm';
-import Button from '../ui/Button';
+
 
 interface AuthModalProps {
   isOpen: boolean;

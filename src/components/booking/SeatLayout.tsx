@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Info, MapPin, Clock } from 'lucide-react';
+import { Info, MapPin } from 'lucide-react';
 import Button from '../ui/Button';
 import Select from '../ui/Select';
-import { Seat, Route, Stop } from '../../types';
+import { Seat, Route } from '../../types';
 
 interface SeatLayoutProps {
   scheduleId: string;

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Edit, Trash2, Search, MapPin, Clock, ArrowRight } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, MapPin, Clock } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { Route, Stop } from '../../types';

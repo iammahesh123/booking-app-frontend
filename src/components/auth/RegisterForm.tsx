@@ -101,12 +101,7 @@ const RegisterForm: React.FC = () => {
       );
       
       navigate('/');
-    } catch (error) {
-      setErrors(prev => ({
-        ...prev,
-        general: 'Registration failed. Please try again.'
-      }));
-    } finally {
+    }  finally {
       setIsLoading(false);
     }
   };

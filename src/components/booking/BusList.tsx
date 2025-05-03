@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Filter, Check, ChevronsUpDown, Clock, Coffee, Wifi, PlugZap, Snowflake, MapPin } from 'lucide-react';
+import { ArrowRight, Filter, ChevronsUpDown, Clock, Coffee, Wifi, PlugZap, Snowflake, MapPin } from 'lucide-react';
 import Button from '../ui/Button';
 import { Schedule, Bus, Route } from '../../types';
 
@@ -292,20 +292,20 @@ const BusList: React.FC<BusListProps> = ({ schedules, buses, routes, date }) => 
                   </Button>
                 </div>
 
-                {route?.stops?.length > 0 && (
+                {(route?.stops ?? []).length > 0 && (
                   <div className="px-4 py-2 bg-gray-50 border-t">
                     <button
                       onClick={() => setShowStops(!showStops)}
                       className="flex items-center text-sm text-gray-600 hover:text-gray-900"
                     >
                       <MapPin size={16} className="mr-1" />
-                      {route.stops.length} stops
+                      {route?.stops?.length || 0} stops
                       <ChevronsUpDown size={16} className="ml-1" />
                     </button>
                     
                     {showStops && (
                       <div className="mt-2 space-y-2">
-                        {route.stops.map((stop, index) => (
+                        {route?.stops?.map((stop, index) => (
                           <div key={index} className="flex items-center text-sm">
                             <div className="w-24 text-gray-500">{stop.name}</div>
                             <div className="flex items-center text-gray-600">

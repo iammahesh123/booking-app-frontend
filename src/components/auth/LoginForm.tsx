@@ -32,8 +32,6 @@ const LoginForm: React.FC = () => {
       } else {
         navigate('/');
       }
-    } catch (error) {
-      setError('Invalid email or password');
     } finally {
       setIsLoading(false);
     }

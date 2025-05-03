@@ -1,9 +1,7 @@
 import React from 'react';
-import { Users, Bus, Ticket, BarChart2, UserCheck, DollarSign } from 'lucide-react';
+import { Ticket, BarChart2, UserCheck, DollarSign } from 'lucide-react';
 import { mockBookingSummary, mockPopularRoutes } from '../../components/utils/MockData';
 import {
-    LineChart,
-    Line,
     XAxis,
     YAxis,
     CartesianGrid,
