@@ -1,12 +1,12 @@
 import React from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Check, Download, Bus, MapPin, Calendar, Clock, Users } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/layout/Footer';
 
 const BookingConfirmationPage: React.FC = () => {
-  const { bookingId } = useParams();
+  // const {  } = useParams();
 
   // In a real app, you would fetch booking details using the bookingId
   const bookingDetails = {

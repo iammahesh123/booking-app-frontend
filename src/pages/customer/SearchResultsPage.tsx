@@ -4,16 +4,16 @@ import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/layout/Footer';
 import BusSearchForm from '../../components/booking/BusSearchForm';
 import BusList from '../../components/booking/BusList';
-import { Schedule, Bus, Route } from '../../types';
+import { Schedule } from '../../types';
 import { mockSchedules, mockBuses, mockRoutes } from '../../components/utils/MockData';
 
 const SearchResultsPage: React.FC = () => {
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   
-  const [source, setSource] = useState(queryParams.get('source') || '');
-  const [destination, setDestination] = useState(queryParams.get('destination') || '');
-  const [date, setDate] = useState(queryParams.get('date') || formatCurrentDate());
+  const [source] = useState(queryParams.get('source') || '');
+  const [destination] = useState(queryParams.get('destination') || '');
+  const [date] = useState(queryParams.get('date') || formatCurrentDate());
   
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [isLoading, setIsLoading] = useState(true);

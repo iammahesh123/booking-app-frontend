@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Calendar, Search } from 'lucide-react';
+import { Calendar, Search } from 'lucide-react';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
 import Select from '../ui/Select';

@@ -51,7 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(false);
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string) => {
     setIsLoading(true);
     try {
       // In a real app, this would be an API call
@@ -75,7 +75,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const register = async (name: string, email: string, password: string, phone?: string) => {
+  const register = async (name: string, email: string, phone?: string) => {
     setIsLoading(true);
     try {
       // In a real app, this would be an API call to register the user
@@ -137,6 +137,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (context === undefined) {
