@@ -12,7 +12,7 @@ const SearchResultsPage: React.FC = () => {
   const queryParams = new URLSearchParams(location.search);
   
   const [source] = useState(queryParams.get('source') || '');
-  const [destination] = useState(queryParams.get('destination') || '');
+  const [destination] = useState(queryParams.get('destinationCity') || '');
   const [date] = useState(queryParams.get('date') || formatCurrentDate());
   
   const [schedules, setSchedules] = useState<Schedule[]>([]);
@@ -38,8 +38,8 @@ const SearchResultsPage: React.FC = () => {
         
         const route = mockRoutes.find(r => r.id === schedule.routeId);
         
-        const sourceMatches = !source || route?.source.toLowerCase() === source.toLowerCase();
-        const destinationMatches = !destination || route?.destination.toLowerCase() === destination.toLowerCase();
+        const sourceMatches = !source || route?.sourceCity.toLowerCase() === source.toLowerCase();
+        const destinationMatches = !destination || route?.destinationCity.toLowerCase() === destination.toLowerCase();
         
         return sourceMatches && destinationMatches;
       });

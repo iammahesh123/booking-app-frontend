@@ -25,8 +25,8 @@ const SeatLayout: React.FC<SeatLayoutProps> = ({
   selectedSeats
 }) => {
   const [hoveredSeat, setHoveredSeat] = useState<Seat | null>(null);
-  const [sourceStop, setSourceStop] = useState<string>(route?.source || '');
-  const [destinationStop, setDestinationStop] = useState<string>(route?.destination || '');
+  const [sourceStop, setSourceStop] = useState<string>(route?.sourceCity || '');
+  const [destinationStop, setDestinationStop] = useState<string>(route?.destinationCity || '');
   const navigate = useNavigate();
   
   if (!route) {
@@ -76,9 +76,9 @@ const SeatLayout: React.FC<SeatLayoutProps> = ({
 
   // Create options array including source, destination, and all stops
   const stopOptions = [
-    { value: route.source, label: route.source },
-    ...route.stops.map(stop => ({ value: stop.name, label: stop.name })),
-    { value: route.destination, label: route.destination }
+    { value: route.sourceCity, label: route.sourceCity },
+    ...route.stops.map(stop => ({ value: stop.stopName, label: stop.stopName })),
+    { value: route.destinationCity, label: route.destinationCity }
   ];
   
   return (

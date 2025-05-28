@@ -28,11 +28,11 @@ const BookingPage: React.FC = () => {
     // Simulate API delay
     const timer = setTimeout(() => {
       if (scheduleId) {
-        const foundSchedule = mockSchedules.find(s => s.id === scheduleId);
+        const foundSchedule = mockSchedules.find(s => s.id);
         setSchedule(foundSchedule || null);
         
         if (foundSchedule) {
-          const foundBus = mockBuses.find(b => b.id === foundSchedule.busId);
+          const foundBus = mockBuses.find(b => b.id);
           setBus(foundBus || null);
           
           const foundRoute = mockRoutes.find(r => r.id === foundSchedule.routeId);
@@ -108,7 +108,7 @@ const BookingPage: React.FC = () => {
               <div className="bg-white rounded-lg shadow-md p-6 mb-6">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                   <div>
-                    <h1 className="text-2xl font-bold">{bus.name}</h1>
+                    <h1 className="text-2xl font-bold">{bus.busName}</h1>
                     <p className="text-gray-500">{bus.busType} • {bus.busNumber}</p>
                   </div>
                   
@@ -117,7 +117,7 @@ const BookingPage: React.FC = () => {
                       <p className="text-lg font-semibold">{formatTime(schedule.departureTime)}</p>
                       <div className="flex items-center text-gray-600 text-sm">
                         <MapPin size={14} className="mr-1" />
-                        {route.source}
+                        {route.sourceCity}
                       </div>
                     </div>
                     
@@ -127,14 +127,14 @@ const BookingPage: React.FC = () => {
                         <div className="h-1 w-16 bg-gray-300"></div>
                         <div className="h-1 w-1 rounded-full bg-gray-400"></div>
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">{route.duration}</p>
+                      <p className="text-xs text-gray-500 mt-1">{route.totalDuration}</p>
                     </div>
                     
                     <div className="text-center">
                       <p className="text-lg font-semibold">{formatTime(schedule.arrivalTime)}</p>
                       <div className="flex items-center text-gray-600 text-sm">
                         <MapPin size={14} className="mr-1" />
-                        {route.destination}
+                        {route.destinationCity}
                       </div>
                     </div>
                   </div>
@@ -146,7 +146,7 @@ const BookingPage: React.FC = () => {
                     </div>
                     <div className="flex items-center text-gray-700 text-sm">
                       <Clock size={14} className="mr-1" />
-                      Journey: {route.duration}
+                      Journey: {route.totalDuration}
                     </div>
                   </div>
                 </div>
@@ -154,7 +154,7 @@ const BookingPage: React.FC = () => {
                 <div className="mt-4 pt-4 border-t">
                   <h3 className="font-medium mb-2">Amenities</h3>
                   <div className="flex flex-wrap gap-2">
-                    {bus.amenities.map((amenity, index) => (
+                    {bus.busAmenities.map((amenity, index) => (
                       <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                         {amenity}
                       </span>
