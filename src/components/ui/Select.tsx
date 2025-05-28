@@ -12,12 +12,26 @@ interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>
   error?: string;
   helperText?: string;
   fullWidth?: boolean;
+  placeholder?: string;
+  leftIcon?: React.ReactNode;
 }
 
 const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ label, options, error, helperText, fullWidth = false, className = '', id, ...props }, ref) => {
+  ({ 
+    label,
+    options,
+    error,
+    helperText,
+    fullWidth = false,
+    className = '',
+    id,
+    placeholder,
+    leftIcon,
+    value,
+    ...props 
+  }, ref) => {
     const selectId = id || `select-${label?.toLowerCase().replace(/\s+/g, '-') || Math.random().toString(36).substring(2, 9)}`;
-    
+
     return (
       <div className={`${fullWidth ? 'w-full' : ''} space-y-1`}>
         {label && (
@@ -28,30 +42,44 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
             {label}
           </label>
         )}
-        
+
         <div className="relative">
+          {leftIcon && (
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              {leftIcon}
+            </div>
+          )}
+          
           <select
             ref={ref}
             id={selectId}
+            value={value}
             className={`
-              block rounded-md px-4 py-2 border ${error ? 'border-red-500' : 'border-gray-300'} 
+              block rounded-md px-4 py-2 border ${error ? 'border-red-500' : 'border-gray-300'}
               bg-white text-gray-900 appearance-none
               focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent
               disabled:opacity-50 disabled:bg-gray-100
+              ${leftIcon ? 'pl-10' : ''}
               ${fullWidth ? 'w-full' : ''}
               ${className}
             `}
             aria-invalid={error ? 'true' : 'false'}
-            aria-describedby={error ? `${selectId}-error` : helperText ? `${selectId}-helper` : undefined}
+            aria-describedby={
+              error ? `${selectId}-error` : helperText ? `${selectId}-helper` : undefined
+            }
             {...props}
           >
+            {placeholder && (!value || value === '') && (
+              <option value="" disabled hidden>{placeholder}</option>
+            )}
+
             {options.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
             ))}
           </select>
-          
+
           <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -68,11 +96,11 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
             </svg>
           </div>
         </div>
-        
+
         {helperText && !error && (
           <p id={`${selectId}-helper`} className="text-sm text-gray-500">{helperText}</p>
         )}
-        
+
         {error && (
           <p id={`${selectId}-error`} className="text-sm text-red-500">{error}</p>
         )}

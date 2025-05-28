@@ -2,7 +2,7 @@ import React, { forwardRef } from 'react';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
-  helperText?: string;
+  helperText?: string | React.ReactNode;
   error?: string;
   fullWidth?: boolean;
   leftIcon?: React.ReactNode;
@@ -10,27 +10,34 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, helperText, error, fullWidth = false, leftIcon, rightIcon, className = '', id, ...props }, ref) => {
+  ({ 
+    label,
+    helperText,
+    error,
+    fullWidth = false,
+    leftIcon,
+    rightIcon,
+    className = '',
+    id,
+    ...props 
+  }, ref) => {
     const inputId = id || `input-${label?.toLowerCase().replace(/\s+/g, '-') || Math.random().toString(36).substring(2, 9)}`;
-    
+
     return (
       <div className={`${fullWidth ? 'w-full' : ''} space-y-1`}>
         {label && (
-          <label
-            htmlFor={inputId}
-            className="block text-sm font-medium text-gray-700"
-          >
+          <label htmlFor={inputId} className="block text-sm font-medium text-gray-700">
             {label}
           </label>
         )}
-        
+
         <div className={`relative ${fullWidth ? 'w-full' : ''}`}>
           {leftIcon && (
             <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
               {leftIcon}
             </div>
           )}
-          
+
           <input
             ref={ref}
             id={inputId}
@@ -49,20 +56,24 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             aria-describedby={error ? `${inputId}-error` : helperText ? `${inputId}-helper` : undefined}
             {...props}
           />
-          
+
           {rightIcon && (
             <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
               {rightIcon}
             </div>
           )}
         </div>
-        
+
         {helperText && !error && (
-          <p id={`${inputId}-helper`} className="text-sm text-gray-500">{helperText}</p>
+          <p id={`${inputId}-helper`} className="text-sm text-gray-500">
+            {helperText}
+          </p>
         )}
-        
+
         {error && (
-          <p id={`${inputId}-error`} className="text-sm text-red-500">{error}</p>
+          <p id={`${inputId}-error`} className="text-sm text-red-500">
+            {error}
+          </p>
         )}
       </div>
     );

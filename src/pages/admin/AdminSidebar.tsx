@@ -11,7 +11,7 @@ import {
   HelpCircle,
   LogOut
 } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+// import { useAuth } from '../../context/AuthContext';
 
 interface SidebarItemProps {
   to: string;
@@ -38,7 +38,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ to, icon, label, active }) =>
 
 const AdminSidebar: React.FC = () => {
   const location = useLocation();
-  const { logout } = useAuth();
+//   const { logout } = useAuth();
   
   const menuItems = [
     { 
@@ -126,7 +126,7 @@ const AdminSidebar: React.FC = () => {
         </Link>
         
         <button
-          onClick={logout}
+        //   onClick={logout}
           className="flex items-center space-x-3 px-4 py-3 rounded-md text-red-600 hover:bg-red-50 w-full text-left transition-colors"
         >
           <LogOut size={20} />

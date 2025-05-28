@@ -1,4 +1,4 @@
-import { User, Bus, Route, Schedule, Seat, Booking, PopularRoute, BookingSummary, Stop } from '../types';
+import { User, Bus, Route, Schedule, Seat, Booking, PopularRoute, BookingSummary } from '../../types';
 
 export const mockUsers: User[] = [
   {
