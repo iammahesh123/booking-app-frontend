@@ -33,15 +33,15 @@ export interface Route {
   destinationCity: string;
   totalDistance: number;
   totalDuration: string; 
-  stopIds: number[]; 
+  stopIds?: number[]; 
   stops?: Stop[];
   
 }
 
 export interface Schedule {
-  id: string;
-  busId: string;
-  routeId: string;
+  id: number;
+  busId: number;
+  routeId: number;
   departureTime: string;
   arrivalTime: string;
   date: string;

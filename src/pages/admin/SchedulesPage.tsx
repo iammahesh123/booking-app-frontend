@@ -11,8 +11,8 @@ const SchedulesPage: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
   const [formData, setFormData] = useState({
-    busId: '',
-    routeId: '',
+    busId: 0,
+    routeId: 0 ,
     departureTime: '',
     arrivalTime: '',
     date: '',
@@ -21,22 +21,23 @@ const SchedulesPage: React.FC = () => {
   });
 
   const filteredSchedules = schedules.filter(schedule => {
-    const bus = mockBuses.find(b => b.id === schedule.busId);
+    // const bus = mockBuses.find(b => b.id == schedule.busId);
+    const bus = mockBuses.find(b => b.id);
     const route = mockRoutes.find(r => r.id === schedule.routeId);
-    const searchString = `${bus?.name} ${route?.source} ${route?.destination}`.toLowerCase();
+    const searchString = `${bus?.busName} ${route?.sourceCity} ${route?.destinationCity}`.toLowerCase();
     return searchString.includes(searchTerm.toLowerCase());
   });
 
   const handleAddSchedule = () => {
     const newSchedule: Schedule = {
-      id: `schedule${Date.now()}`,
+      id: 1,
       ...formData
     };
     setSchedules([...schedules, newSchedule]);
     setShowAddModal(false);
     setFormData({
-      busId: '',
-      routeId: '',
+      busId: 0,
+      routeId: 0,
       departureTime: '',
       arrivalTime: '',
       date: '',
@@ -45,15 +46,15 @@ const SchedulesPage: React.FC = () => {
     });
   };
 
-  const handleDeleteSchedule = (scheduleId: string) => {
+  const handleDeleteSchedule = (scheduleId: number) => {
     setSchedules(schedules.filter(schedule => schedule.id !== scheduleId));
   };
 
-  const getBusDetails = (busId: string): Bus | undefined => {
-    return mockBuses.find(bus => bus.id === busId);
+  const getBusDetails = (busId: number): Bus | undefined => {
+    return mockBuses.find(bus => bus.id);
   };
 
-  const getRouteDetails = (routeId: string): Route | undefined => {
+  const getRouteDetails = (routeId: number): Route | undefined => {
     return mockRoutes.find(route => route.id === routeId);
   };
 
@@ -120,9 +121,9 @@ const SchedulesPage: React.FC = () => {
                     return (
                       <tr key={schedule.id}>
                         <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm">
-                          <div className="font-medium text-gray-900">{bus?.name}</div>
+                          <div className="font-medium text-gray-900">{bus?.busName}</div>
                           <div className="text-gray-500">
-                            {route?.source} → {route?.destination}
+                            {route?.sourceCity} → {route?.destinationCity}
                           </div>
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
@@ -185,13 +186,13 @@ const SchedulesPage: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700">Bus</label>
                 <select
                   value={formData.busId}
-                  onChange={(e) => setFormData({ ...formData, busId: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, busId: Number(e.target.value) })}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
                 >
                   <option value="">Select a bus</option>
                   {mockBuses.map(bus => (
                     <option key={bus.id} value={bus.id}>
-                      {bus.name} - {bus.busNumber}
+                      {bus.busName} - {bus.busNumber}
                     </option>
                   ))}
                 </select>
@@ -201,13 +202,13 @@ const SchedulesPage: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700">Route</label>
                 <select
                   value={formData.routeId}
-                  onChange={(e) => setFormData({ ...formData, routeId: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, routeId: Number(e.target.value) })}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
                 >
                   <option value="">Select a route</option>
                   {mockRoutes.map(route => (
                     <option key={route.id} value={route.id}>
-                      {route.source} to {route.destination}
+                      {route.sourceCity} to {route.destinationCity}
                     </option>
                   ))}
                 </select>

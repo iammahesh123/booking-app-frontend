@@ -27,164 +27,164 @@ export const mockUsers: User[] = [
 export const mockBuses: Bus[] = [
   {
     id: "bus1",
-    name: "Royal Cruiser",
+    busName: "Royal Cruiser",
     busNumber: "KA-01-F-7777",
     busType: "AC",
     totalSeats: 40,
-    amenities: ["WiFi", "Charging Point", "Refreshments", "Air Conditioning"],
-    operator: "Sharma Travels",
+    busAmenities: ["WiFi", "Charging Point", "Refreshments", "Air Conditioning"],
+    operatorName: "Sharma Travels",
   },
   {
     id: "bus2",
-    name: "Night Rider",
+    busName: "Night Rider",
     busNumber: "MH-04-AB-9999",
     busType: "Sleeper",
     totalSeats: 30,
-    amenities: ["WiFi", "Charging Point", "Blankets", "Air Conditioning"],
-    operator: "National Travels",
+    busAmenities: ["WiFi", "Charging Point", "Blankets", "Air Conditioning"],
+    operatorName: "National Travels",
   },
   {
     id: "bus3",
-    name: "City Express",
+    busName: "City Express",
     busNumber: "DL-01-AB-1234",
     busType: "Non-AC",
     totalSeats: 45,
-    amenities: ["Charging Point", "Water Bottle"],
-    operator: "Delhi Express",
+    busAmenities: ["Charging Point", "Water Bottle"],
+    operatorName: "Delhi Express",
   },
   {
     id: "bus4",
-    name: "Golden Chariot",
+    busName: "Golden Chariot",
     busNumber: "TN-07-CD-4567",
     busType: "AC",
     totalSeats: 38,
-    amenities: ["WiFi", "Charging Point", "Snacks", "Air Conditioning", "USB Ports"],
-    operator: "Southern Travels",
+    busAmenities: ["WiFi", "Charging Point", "Snacks", "Air Conditioning", "USB Ports"],
+    operatorName: "Southern Travels",
   },
   {
     id: "bus5",
-    name: "Mountain Safari",
+    busName: "Mountain Safari",
     busNumber: "HP-03-XY-7890",
     busType: "Semi-Sleeper",
     totalSeats: 35,
-    amenities: ["Charging Point", "Reading Light", "Air Conditioning"],
-    operator: "Himalayan Tours",
+    busAmenities: ["Charging Point", "Reading Light", "Air Conditioning"],
+    operatorName: "Himalayan Tours",
   }
 ];
 
 export const mockRoutes: Route[] = [
   {
-    id: "route1",
-    source: "Delhi",
-    destination: "Mumbai",
+    id: 1,
+    sourceCity: "Delhi",
+    destinationCity: "Mumbai",
     stops: [
       {
-        name: "Jaipur",
+        stopName: "Jaipur",
         arrivalTime: "23:30",
         departureTime: "23:45",
         distance: 280
       },
       {
-        name: "Ahmedabad",
+        stopName: "Ahmedabad",
         arrivalTime: "08:30",
         departureTime: "08:45",
         distance: 850
       },
       {
-        name: "Surat",
+        stopName: "Surat",
         arrivalTime: "12:30",
         departureTime: "12:45",
         distance: 1100
       }
     ],
-    distance: 1400,
-    duration: "18h 30m",
+    totalDistance: 1400,
+    totalDuration: "18h 30m",
   },
   {
-    id: "route2",
-    source: "Bangalore",
-    destination: "Hyderabad",
+    id: 2,
+    sourceCity: "Bangalore",
+    destinationCity: "Hyderabad",
     stops: [
       {
-        name: "Anantapur",
+        stopName: "Anantapur",
         arrivalTime: "11:30",
         departureTime: "11:45",
         distance: 200
       },
       {
-        name: "Kurnool",
+        stopName: "Kurnool",
         arrivalTime: "14:30",
         departureTime: "14:45",
         distance: 350
       }
     ],
-    distance: 570,
-    duration: "8h 15m",
+    totalDistance: 570,
+    totalDuration: "8h 15m",
   },
   {
-    id: "route3",
-    source: "Chennai",
-    destination: "Bangalore",
+    id: 3,
+    sourceCity: "Chennai",
+    destinationCity: "Bangalore",
     stops: [
       {
-        name: "Vellore",
+        stopName: "Vellore",
         arrivalTime: "08:30",
         departureTime: "08:45",
         distance: 140
       },
       {
-        name: "Krishnagiri",
+        stopName: "Krishnagiri",
         arrivalTime: "10:30",
         departureTime: "10:45",
         distance: 250
       }
     ],
-    distance: 346,
-    duration: "6h 30m",
+    totalDistance: 346,
+    totalDuration: "6h 30m",
   },
   {
-    id: "route4",
-    source: "Mumbai",
-    destination: "Pune",
+    id: 4,
+    sourceCity: "Mumbai",
+    destinationCity: "Pune",
     stops: [
       {
-        name: "Lonavala",
+        stopName: "Lonavala",
         arrivalTime: "11:30",
         departureTime: "11:45",
         distance: 80
       }
     ],
-    distance: 150,
-    duration: "3h 45m",
+    totalDistance: 150,
+    totalDuration: "3h 45m",
   },
   {
-    id: "route5",
-    source: "Delhi",
-    destination: "Jaipur",
+    id: 5,
+    sourceCity: "Delhi",
+    destinationCity: "Jaipur",
     stops: [
       {
-        name: "Gurugram",
+        stopName: "Gurugram",
         arrivalTime: "08:30",
         departureTime: "08:45",
         distance: 30
       },
       {
-        name: "Neemrana",
+        stopName: "Neemrana",
         arrivalTime: "10:30",
         departureTime: "10:45",
         distance: 150
       }
     ],
-    distance: 280,
-    duration: "5h 15m",
+    totalDistance: 280,
+    totalDuration: "5h 15m",
   }
 ];
 
 export const mockSchedules: Schedule[] = [
   {
-    id: "schedule1",
-    busId: "bus1",
-    routeId: "route1",
+    id:1,
+    busId: 1,
+    routeId: 1,
     departureTime: "21:00",
     arrivalTime: "15:30",
     date: "2025-01-15",
@@ -192,9 +192,9 @@ export const mockSchedules: Schedule[] = [
     fare: 1800,
   },
   {
-    id: "schedule2",
-    busId: "bus2",
-    routeId: "route2",
+    id: 2,
+    busId: 2,
+    routeId: 2,
     departureTime: "22:30",
     arrivalTime: "06:45",
     date: "2025-01-15",
@@ -202,9 +202,9 @@ export const mockSchedules: Schedule[] = [
     fare: 1200,
   },
   {
-    id: "schedule3",
-    busId: "bus3",
-    routeId: "route3",
+    id: 3,
+    busId: 3,
+    routeId: 3,
     departureTime: "08:15",
     arrivalTime: "14:45",
     date: "2025-01-15",
@@ -212,9 +212,9 @@ export const mockSchedules: Schedule[] = [
     fare: 850,
   },
   {
-    id: "schedule4",
-    busId: "bus4",
-    routeId: "route4",
+    id: 4,
+    busId: 4,
+    routeId: 4,
     departureTime: "10:00",
     arrivalTime: "13:45",
     date: "2025-01-15",
@@ -222,9 +222,9 @@ export const mockSchedules: Schedule[] = [
     fare: 450,
   },
   {
-    id: "schedule5",
-    busId: "bus5",
-    routeId: "route5",
+    id: 5,
+    busId: 5,
+    routeId: 5,
     departureTime: "07:30",
     arrivalTime: "12:45",
     date: "2025-01-15",
@@ -232,9 +232,9 @@ export const mockSchedules: Schedule[] = [
     fare: 650,
   },
   {
-    id: "schedule6",
-    busId: "bus1",
-    routeId: "route1",
+    id: 6,
+    busId: 1,
+    routeId: 1,
     departureTime: "18:00",
     arrivalTime: "12:30",
     date: "2025-01-15",
