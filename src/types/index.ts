@@ -1,4 +1,4 @@
-import React from 'react';
+
 
 export interface User {
   id: string;
@@ -11,28 +11,31 @@ export interface User {
 
 export interface Bus {
   id: string;
-  name: string;
-  busNumber: string;
+  busName?: string;
+  busNumber?: string;
   busType: 'AC' | 'Non-AC' | 'Sleeper' | 'Semi-Sleeper';
   totalSeats: number;
-  amenities: string[];
-  operator: string;
+  busAmenities?: string[];
+  operatorName: string;
 }
 
 export interface Stop {
-  name: string;
+  id?: number;
+  stopName: string;
   arrivalTime: string;
   departureTime: string;
   distance: number; // Distance from start in km
 }
 
 export interface Route {
-  id: string;
-  source: string;
-  destination: string;
-  stops: Stop[];
-  distance: number;
-  duration: string; // in the format "5h 30m"
+  id: number;
+  sourceCity: string;
+  destinationCity: string;
+  totalDistance: number;
+  totalDuration: string; 
+  stopIds: number[]; 
+  stops?: Stop[];
+  
 }
 
 export interface Schedule {
