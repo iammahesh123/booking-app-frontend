@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 // Pages
 import HomePage from './pages/HomePage';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
+import ProfilePage from './pages/customer/ProfilePage';
 
 // // Authentication routes
 // const LoginPage = React.lazy(() => import('./pages/auth/LoginPage'));
@@ -40,7 +41,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles?: strin
   }
   
   if (!isAuthenticated) {
-    return <Navigate to="/login" />;
+    return <Navigate to="/" />;
   }
   
   if (allowedRoles.length > 0 && user && !allowedRoles.includes(user.role)) {
@@ -64,6 +65,7 @@ const App: React.FC = () => {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/search" element={<SearchResultsPage />} />
+            {/* <Route path="/profile" element={<PassengerInfoPage />} /> */}
             <Route path="/booking/:scheduleId" element={<BookingPage />} />
             <Route 
               path="/booking/:scheduleId/passengers" 
@@ -86,6 +88,14 @@ const App: React.FC = () => {
               element={
                 <ProtectedRoute>
                   <MyBookingsPage />
+                </ProtectedRoute>
+              } 
+            />
+                        <Route 
+              path="/profile" 
+              element={
+                <ProtectedRoute>
+                  <ProfilePage />
                 </ProtectedRoute>
               } 
             />
