@@ -7,6 +7,7 @@ import UsersPage from './UsersPage';
 import RoutesPage from './RoutesPage';
 import SchedulesPage from './SchedulesPage';
 import TransactionsPage from './TransactionsPage';
+import SeatManagementPage from './SeatManagementPage';
 // import SettingsPage from './SettingsPage';
 
 const AdminDashboardPage: React.FC = () => {
@@ -22,6 +23,7 @@ const AdminDashboardPage: React.FC = () => {
           <Route path="/routes" element={<RoutesPage />} />
           <Route path="/schedules" element={<SchedulesPage />} />
           <Route path="/transactions" element={<TransactionsPage />} />
+          <Route path="/seats" element={<SeatManagementPage />} />
           {/* <Route path="/settings" element={<SettingsPage />} /> */}
           <Route path="/help" element={<div className="p-6"><h1 className="text-2xl font-bold">Help & Support</h1></div>} />
         </Routes>

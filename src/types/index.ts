@@ -1,19 +1,17 @@
-
-
 export interface User {
   id: string;
   name: string;
   email: string;
   phone?: string;
-  role: 'customer' | 'agent' | 'admin';
+  role: 'CUSTOMER' | 'agent' | 'ADMIN';
   profilePicture?: string;
 }
 
 export interface Bus {
-  id: string;
+  id?: number;
   busName?: string;
   busNumber?: string;
-  busType: 'AC' | 'Non-AC' | 'Sleeper' | 'Semi-Sleeper';
+  busType: 'AC' | 'NON_AC' | 'SLEEPER' | 'SEMI_SLEEPER';
   totalSeats: number;
   busAmenities?: string[];
   operatorName: string;
@@ -44,23 +42,47 @@ export interface Schedule {
   routeId: number;
   departureTime: string;
   arrivalTime: string;
-  date: string;
-  availableSeats: number;
-  fare: number;
+  scheduleDate: string;
+  totalSeats: number;
+  farePrice: number;
+  bus?: Bus;
+  route?: Route;
+  seats?: Seat[]; // Optional, can be fetched separately
+}
+
+export interface ApiScheduleResponse {
+  id: number;
+  busResponseDTO: Bus;
+  routeResponseDTO: Route | null;
+  scheduleDate: string;
+  arrivalTime: string;
+  departureTime: string;
+  totalSeats: number;
+  farePrice: number;
+  createdAt: string;
+  updatedAt: string;
+  updatedBy: string;
+  createdBy: string;
 }
 
 export interface Seat {
-  id: string;
-  number: string;
-  type: 'window' | 'aisle' | 'middle' | 'sleeper';
-  status: 'available' | 'booked' | 'selected' | 'unavailable';
-  price: number;
+  id: number;
+  seatNumber: string;
+  seatType: 'window' | 'aisle' | 'middle' | 'sleeper';
+  seatStatus: 'AVAILABLE' | 'BOOKED' | 'SELECTED' | 'UNAVAILABLE';
+  seatPrice: number;
+}
+
+export enum OrderBy {
+  ASC = 'ASC',
+  DESC = 'DESC'
 }
 
 export interface Booking {
   id: string;
   userId: string;
   scheduleId: string;
+  number: string;
   bookedSeats: Seat[];
   passengers: Passenger[];
   totalFare: number;

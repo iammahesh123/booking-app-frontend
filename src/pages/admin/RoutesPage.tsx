@@ -1,10 +1,10 @@
-
 import React, { useEffect, useState } from 'react';
-import { Plus, Edit, Trash2, Search, MapPin, Clock, ArrowRight } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, MapPin, Clock, ArrowRight, ChevronLeft, ChevronRight, ArrowUp, ArrowDown } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
-import { Route, Stop } from '../../types';
+import { Route, Stop, OrderBy } from '../../types';
 import api from '../../apiConfig/axios';
+import { formatTime } from '../../components/utils/formatTime';
 
 const RoutesPage: React.FC = () => {
   const [routes, setRoutes] = useState<Route[]>([]);
@@ -13,6 +13,7 @@ const RoutesPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     id: 0,
     sourceCity: '',
@@ -22,13 +23,30 @@ const RoutesPage: React.FC = () => {
     stops: [] as Stop[]
   });
 
-  // Fetch routes on component mount
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [sortColumn, setSortColumn] = useState<string>('sourceCity');
+  const [orderBy, setOrderBy] = useState<OrderBy>(OrderBy.ASC);
+
+  // Fetch routes with pagination
   useEffect(() => {
     const fetchRoutes = async () => {
       try {
         setLoading(true);
-        const response = await api.get('/bus-route');
-        setRoutes(response.data);
+        const response = await api.get('/bus-route', {
+          params: {
+            pageNumber: currentPage - 1,
+            pageSize: itemsPerPage,
+            sortColumn: sortColumn,
+            orderBY: orderBy
+          }
+        });
+        setRoutes(response.data.data);
+        setTotalPages(response.data.totalPages);
+        setTotalRecords(response.data.totalRecords);
       } catch (err) {
         setError('Failed to fetch routes');
         console.error(err);
@@ -38,7 +56,7 @@ const RoutesPage: React.FC = () => {
     };
 
     fetchRoutes();
-  }, []);
+  }, [currentPage, itemsPerPage, sortColumn, orderBy]);
 
   const filteredRoutes = routes.filter(route => {
     const searchLower = searchTerm.toLowerCase();
@@ -48,13 +66,124 @@ const RoutesPage: React.FC = () => {
     );
   });
 
+    const handleAddRoute = async () => {
+    if (isSubmitting) return;
+    
+    try {
+      setIsSubmitting(true);
+      const stopIds = await saveStops(formData.stops);
+
+      const routeData = {
+        id: formData.id || 0,
+        sourceCity: formData.sourceCity,
+        destinationCity: formData.destinationCity,
+        totalDistance: formData.distance,
+        totalDuration: formData.duration,
+        stopIds: stopIds
+      };
+
+      if (selectedRoute && selectedRoute.id) {
+        const response = await api.put(`/bus-route/${selectedRoute.id}`, routeData);
+        setRoutes(routes.map(route =>
+          route.id === selectedRoute.id ? response.data : route
+        ));
+      } else {
+        const response = await api.post('/bus-route', routeData);
+        setRoutes([...routes, response.data]);
+      }
+
+      setShowAddModal(false);
+      resetForm();
+    } catch (err) {
+      console.error('Error saving route:', err);
+      setError('Failed to save route');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+    const handleStopChange = (index: number, field: keyof Stop, value: string | number) => {
+    const newStops = [...formData.stops];
+    newStops[index] = {
+      ...newStops[index],
+      [field]: value
+    };
+    setFormData({ ...formData, stops: newStops });
+  };
+
+  // Sorting handler
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      setOrderBy(orderBy === OrderBy.ASC ? OrderBy.DESC : OrderBy.ASC);
+    } else {
+      setSortColumn(column);
+      setOrderBy(OrderBy.ASC);
+    }
+    setCurrentPage(1); 
+  };
+
+  const renderSortIndicator = (column: string) => {
+    if (sortColumn !== column) return null;
+    return orderBy === OrderBy.ASC ? (
+      <ArrowUp className="ml-1 h-3 w-3 inline" />
+    ) : (
+      <ArrowDown className="ml-1 h-3 w-3 inline" />
+    );
+  };
+
+  // Pagination controls
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const goToPreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+  const resetForm = () => {
+    setFormData({
+      id: 0,
+      sourceCity: '',
+      destinationCity: '',
+      distance: 0,
+      duration: '',
+      stops: []
+    });
+    setSelectedRoute(null);
+  };
+
+  //   // Fetch routes on component mount
+  // useEffect(() => {
+  //   const fetchRoutes = async () => {
+  //     try {
+  //       setLoading(true);
+  //       const response = await api.get('/bus-route');
+  //       setRoutes(response.data.data);
+  //     } catch (err) {
+  //       setError('Failed to fetch routes');
+  //       console.error(err);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   fetchRoutes();
+  // }, []);
+
   const handleAddStop = () => {
     setFormData({
       ...formData,
       stops: [
         ...formData.stops,
         {
-          id: 0, // Temporary ID, will be replaced when saved
+          id: 0,
           stopName: '',
           arrivalTime: '',
           departureTime: '',
@@ -71,18 +200,10 @@ const RoutesPage: React.FC = () => {
     });
   };
 
-  const handleStopChange = (index: number, field: keyof Stop, value: string | number) => {
-    const newStops = [...formData.stops];
-    newStops[index] = {
-      ...newStops[index],
-      [field]: value
-    };
-    setFormData({ ...formData, stops: newStops });
-  };
 
   const saveStops = async (stops: Stop[]): Promise<number[]> => {
     const stopIds: number[] = [];
-    
+
     for (const stop of stops) {
       try {
         const stopData = {
@@ -94,11 +215,9 @@ const RoutesPage: React.FC = () => {
 
         let stopId;
         if (stop.id && stop.id > 0) {
-          // Update existing stop
-          await api.put(`/bus-stop/${stop.id}`, stopData);
-          stopId = stop.id;
+          const response = await api.put(`/bus-stop/${stop.id}`, stopData);
+          stopId = response.data.id;
         } else {
-          // Create new stop
           const response = await api.post('/bus-stop', stopData);
           stopId = response.data.id;
         }
@@ -108,66 +227,23 @@ const RoutesPage: React.FC = () => {
         throw new Error('Failed to save stop');
       }
     }
-    
+
     return stopIds;
   };
 
-  const handleAddRoute = async () => {
-    try {
-      // First save all stops
-      const stopIds = await saveStops(formData.stops);
-
-      // Then create/update the route
-      const routeData = {
-        id: formData.id || 0,
-        sourceCity: formData.sourceCity,
-        destinationCity: formData.destinationCity,
-        totalDistance: formData.distance,
-        totalDuration: formData.duration,
-        stopIds: stopIds
-      };
-
-      if (selectedRoute && selectedRoute.id) {
-        // Update existing route
-        const response = await api.put(`/bus-route/${selectedRoute.id}`, routeData);
-        setRoutes(routes.map(route =>
-          route.id === selectedRoute.id ? response.data : route
-        ));
-      } else {
-        // Create new route
-        const response = await api.post('/bus-route', routeData);
-        setRoutes([...routes, response.data]);
-      }
-
-      setShowAddModal(false);
-      resetForm();
-    } catch (err) {
-      console.error('Error saving route:', err);
-      setError('Failed to save route');
-    }
-  };
 
   const handleDeleteRoute = async (routeId: number) => {
-    try {
-      await api.delete(`/bus-route/${routeId}`);
-      setRoutes(routes.filter(route => route.id !== routeId));
-    } catch (err) {
-      console.error('Error deleting route:', err);
-      setError('Failed to delete route');
+    if (window.confirm('Are you sure you want to delete this route?')) {
+      try {
+        await api.delete(`/bus-route/${routeId}`);
+        setRoutes(routes.filter(route => route.id !== routeId));
+      } catch (err) {
+        console.error('Error deleting route:', err);
+        setError('Failed to delete route');
+      }
     }
   };
 
-  const resetForm = () => {
-    setFormData({
-      id: 0,
-      sourceCity: '',
-      destinationCity: '',
-      distance: 0,
-      duration: '',
-      stops: []
-    });
-    setSelectedRoute(null);
-  };
 
   const handleEditRoute = (route: Route) => {
     setSelectedRoute(route);
@@ -191,6 +267,7 @@ const RoutesPage: React.FC = () => {
   if (loading) return <div>Loading routes...</div>;
   if (error) return <div className="text-red-500">{error}</div>;
 
+
   return (
     <div className="p-6">
       <div className="sm:flex sm:items-center">
@@ -211,7 +288,7 @@ const RoutesPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="mt-6">
+      <div className="mt-6 flex flex-col sm:flex-row gap-4">
         <Input
           type="text"
           placeholder="Search routes..."
@@ -220,6 +297,26 @@ const RoutesPage: React.FC = () => {
           leftIcon={<Search size={20} />}
           fullWidth
         />
+        <div className="flex items-center gap-2">
+          <label htmlFor="itemsPerPage" className="text-sm text-gray-700">
+            Items per page:
+          </label>
+          <select
+            id="itemsPerPage"
+            value={itemsPerPage}
+            onChange={(e) => {
+              setItemsPerPage(Number(e.target.value));
+              setCurrentPage(1);
+            }}
+            className="rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+          >
+            {[5, 10, 20, 50].map(option => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="mt-8 flex flex-col">
@@ -229,17 +326,38 @@ const RoutesPage: React.FC = () => {
               <table className="min-w-full divide-y divide-gray-300">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900">
-                      Route Details
+                    <th
+                      scope="col"
+                      className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 cursor-pointer"
+                      onClick={() => handleSort('sourceCity')}
+                    >
+                      <div className="flex items-center">
+                        Route Details
+                        {renderSortIndicator('sourceCity')}
+                      </div>
                     </th>
                     <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                       Stops
                     </th>
-                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                      Distance
+                    <th
+                      scope="col"
+                      className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 cursor-pointer"
+                      onClick={() => handleSort('totalDistance')}
+                    >
+                      <div className="flex items-center">
+                        Distance
+                        {renderSortIndicator('totalDistance')}
+                      </div>
                     </th>
-                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                      Duration
+                    <th
+                      scope="col"
+                      className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 cursor-pointer"
+                      onClick={() => handleSort('totalDuration')}
+                    >
+                      <div className="flex items-center">
+                        Duration
+                        {renderSortIndicator('totalDuration')}
+                      </div>
                     </th>
                     <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
                       <span className="sr-only">Actions</span>
@@ -247,61 +365,121 @@ const RoutesPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 bg-white">
-                  {filteredRoutes.map((route) => (
-                    <tr key={route.id}>
-                      <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm">
-                        <div className="flex items-center">
-                          <MapPin className="h-5 w-5 text-gray-400 mr-2" />
-                          <div>
-                            <div className="font-medium text-gray-900">{route.sourceCity}</div>
-                            <ArrowRight className="h-4 w-4 text-gray-400 inline mx-1" />
-                            <div className="font-medium text-gray-900 inline">{route.destinationCity}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-3 py-4 text-sm text-gray-500">
-                        <div className="flex flex-col gap-1">
-                          {route.stops?.map((stop, index) => (
-                            <div key={index} className="flex items-center text-xs">
-                              <span className="w-20 truncate">{stop.stopName}</span>
-                              <Clock className="h-3 w-3 mx-1" />
-                              <span>{stop.arrivalTime} - {stop.departureTime}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                        {route.totalDistance} km
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                        {route.totalDuration}
-                      </td>
-                      <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                        <div className="flex justify-end gap-2">
-                          <button
-                            onClick={() => handleEditRoute(route)}
-                            className="text-primary hover:text-primary-dark"
-                          >
-                            <Edit className="h-5 w-5" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (window.confirm('Are you sure you want to delete this route?')) {
-                                handleDeleteRoute(route.id);
-                              }
-                            }}
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            <Trash2 className="h-5 w-5" />
-                          </button>
-                        </div>
+                  {filteredRoutes.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="py-4 text-center text-sm text-gray-500">
+                        {searchTerm ? 'No matching routes found' : 'No routes available'}
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    filteredRoutes.map((route) => (
+                      <tr key={route.id}>
+                        <td className="whitespace-nowrap py-4 pl-5 pr-4 text-sm">
+                          <div className="flex items-center">
+                            <MapPin className="h-5 w-5 text-gray-400 mr-2" />
+                            <div className="flex items-center">
+                              <div className="font-medium text-gray-900">{route.sourceCity}</div>
+                              <ArrowRight className="h-4 w-4 text-gray-400 mx-1" />
+                              <div className="font-medium text-gray-900">{route.destinationCity}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-3 py-4 text-sm text-gray-500">
+                          <div className="flex flex-col gap-1">
+                            {route.stops?.map((stop, index) => (
+                              <div key={index} className="flex items-center text-xs">
+                                <span className="w-20 truncate">{stop.stopName}</span>
+                                <Clock className="h-3 w-3 mx-1" />
+                                <span>{formatTime(stop.departureTime)} - {formatTime(stop.arrivalTime)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                          {route.totalDistance} km
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                          {route.totalDuration}
+                        </td>
+                        <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                          <div className="flex justify-end gap-2">
+                            <button
+                              onClick={() => handleEditRoute(route)}
+                              className="text-primary hover:text-primary-dark"
+                            >
+                              <Edit className="h-5 w-5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteRoute(route.id)}
+                              className="text-red-600 hover:text-red-900"
+                            >
+                              <Trash2 className="h-5 w-5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Pagination controls */}
+      <div className="flex flex-col sm:flex-row items-center justify-between mt-4 gap-4">
+        <div className="text-sm text-gray-700">
+          Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
+          {Math.min(currentPage * itemsPerPage, totalRecords)} of {totalRecords} entries
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={goToPreviousPage}
+            disabled={currentPage === 1 || loading}
+            leftIcon={<ChevronLeft size={16} />}
+            size="sm"
+          >
+            Previous
+          </Button> 
+          
+          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+            let pageNum;
+            if (totalPages <= 5) {
+              pageNum = i + 1;
+            } else if (currentPage <= 3) {
+              pageNum = i + 1;
+            } else if (currentPage >= totalPages - 2) {
+              pageNum = totalPages - 4 + i;
+            } else {
+              pageNum = currentPage - 2 + i;
+            }
+
+            return (
+              <Button
+                key={pageNum}
+                variant={currentPage === pageNum ? 'primary' : 'outline'}
+                onClick={() => goToPage(pageNum)}
+                disabled={loading}
+                className="w-10 h-10 p-0 flex items-center justify-center"
+                size="sm"
+              >
+                {pageNum}
+              </Button>
+            );
+          })}
+          
+          <Button
+            variant="outline"
+            onClick={goToNextPage}
+            disabled={currentPage === totalPages || loading}
+            rightIcon={<ChevronRight size={16} />}
+            size="sm"
+          >
+            Next
+          </Button>
         </div>
       </div>
 
@@ -313,9 +491,9 @@ const RoutesPage: React.FC = () => {
               {selectedRoute ? 'Edit Route' : 'Add New Route'}
             </h3>
             <form className="space-y-4" onSubmit={async (e) => {
-    e.preventDefault();
-    await handleAddRoute();
-  }}>
+              e.preventDefault();
+              await handleAddRoute();
+            }}>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input
                   label="Source City"
@@ -430,10 +608,14 @@ const RoutesPage: React.FC = () => {
                 <Button
                   type="submit"
                   variant="primary"
-                  onClick={handleAddRoute}
-                  disabled={!formData.sourceCity || !formData.destinationCity || !formData.duration}
+                  disabled={
+                    !formData.sourceCity || 
+                    !formData.destinationCity || 
+                    !formData.duration ||
+                    isSubmitting
+                  }
                 >
-                  {selectedRoute ? 'Save Changes' : 'Add Route'}
+                  {isSubmitting ? 'Processing...' : selectedRoute ? 'Save Changes' : 'Add Route'}
                 </Button>
               </div>
             </form>

@@ -78,7 +78,7 @@ const HomePage: React.FC = () => {
           />
         </svg>
         <p className="text-sm text-blue-800 leading-snug">
-          Tip: You can also search buses by <strong>make or model</strong> like Volvo, Mercedes, or Ashok Leyland.
+          Tip: You can also search buses by <strong>cities</strong> like Mumbai, Hyderabad, or Srikakulam.
         </p>
       </div>
     </div>
