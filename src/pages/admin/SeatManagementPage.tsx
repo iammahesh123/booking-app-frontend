@@ -1,30 +1,114 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Filter, Eye, Calendar, Bus } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
-import { mockSchedules, mockBuses, mockRoutes, generateSeats } from '../../components/utils/MockData'; // Adjust the import path as necessary
+import { Seat, Schedule, Bus as BusType, Route } from '../../types';
 
 const SeatManagementPage: React.FC = () => {
-  const [selectedSchedule, setSelectedSchedule] = useState('');
+  const [selectedSchedule, setSelectedSchedule] = useState<number | null>(null);
   const [showSeatDetails, setShowSeatDetails] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFilter, setDateFilter] = useState('');
-  const [selectedSeats, setSelectedSeats] = useState<any[]>([]);
+  const [selectedSeats, setSelectedSeats] = useState<Seat[]>([]);
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [buses, setBuses] = useState<BusType[]>([]);
+  const [routes, setRoutes] = useState<Route[]>([]);
+  const [loading, setLoading] = useState({
+    schedules: false,
+    buses: false,
+    routes: false,
+    seats: false
+  });
+  const [error, setError] = useState('');
 
-  const seats = selectedSchedule ? generateSeats(selectedSchedule) : [];
-  const schedule = mockSchedules.find(s => s.id === selectedSchedule);
-  const bus = schedule ? mockBuses.find(b => b.id === schedule.busId) : null;
-  const route = schedule ? mockRoutes.find(r => r.id === schedule.routeId) : null;
+  // Fetch all schedules on component mount
+  useEffect(() => {
+    const fetchSchedules = async () => {
+      try {
+        setLoading(prev => ({ ...prev, schedules: true }));
+        const response = await fetch('http://localhost:8080/bus-schedule');
+        if (!response.ok) {
+          throw new Error('Failed to fetch schedules');
+        }
+        const scheduleData = await response.json();
+        console.log('Fetched schedules:', scheduleData);
+        setSchedules(scheduleData.data);
+      } catch (error) {
+        console.error('Error fetching schedules:', error);
+        setError('Failed to load schedules');
+      } finally {
+        setLoading(prev => ({ ...prev, schedules: false }));
+      }
+    };
 
-  const handleScheduleSelect = (scheduleId: string) => {
+    const fetchBuses = async () => {
+      try {
+        setLoading(prev => ({ ...prev, buses: true }));
+        const response = await fetch('http://localhost:8080/bus');
+        if (!response.ok) {
+          throw new Error('Failed to fetch buses');
+        }
+        const busData = await response.json();
+        console.log('Fetched buses:', busData);
+        setBuses(busData.data);
+      } catch (error) {
+        console.error('Error fetching buses:', error);
+        setError('Failed to load buses');
+      } finally {
+        setLoading(prev => ({ ...prev, buses: false }));
+      }
+    };
+
+    const fetchRoutes = async () => {
+      try {
+        setLoading(prev => ({ ...prev, routes: true }));
+        const response = await fetch('http://localhost:8080/bus-route');
+        if (!response.ok) {
+          throw new Error('Failed to fetch routes');
+        }
+        const routeData = await response.json();
+        console.log('Fetched routes:', routeData);
+        setRoutes(routeData.data);
+      } catch (error) {
+        console.error('Error fetching routes:', error);
+        setError('Failed to load routes');
+      } finally {
+        setLoading(prev => ({ ...prev, routes: false }));
+      }
+    };
+
+    fetchSchedules();
+    fetchBuses();
+    fetchRoutes();
+  }, []);
+
+  const fetchSeats = async (scheduleId: number): Promise<Seat[]> => {
+    try {
+      setLoading(prev => ({ ...prev, seats: true }));
+      const response = await fetch(`http://localhost:8080/bus-seats/view-seats/${scheduleId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch seats');
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching seats:', error);
+      setError('Failed to load seats');
+      return [];
+    } finally {
+      setLoading(prev => ({ ...prev, seats: false }));
+    }
+  };
+
+  const handleScheduleSelect = async (scheduleId: number) => {
     setSelectedSchedule(scheduleId);
+    const seats = await fetchSeats(scheduleId);
+    setSelectedSeats(seats);
     setShowSeatDetails(true);
-    setSelectedSeats(generateSeats(scheduleId));
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case 'available':
         return 'bg-green-100 text-green-800';
       case 'booked':
@@ -33,6 +117,22 @@ const SeatManagementPage: React.FC = () => {
         return 'bg-gray-100 text-gray-800';
     }
   };
+
+  // Filter schedules based on search term and date
+  const filteredSchedules = schedules.filter(schedule => {
+    const matchesSearch = searchTerm === '' || 
+      buses.find(b => b.id === schedule.busId)?.busName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      schedule.departureTime.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesDate = dateFilter === '' || 
+      new Date(schedule.scheduleDate).toISOString().split('T')[0] === dateFilter;
+    
+    return matchesSearch && matchesDate;
+  });
+
+  const schedule = schedules.find(s => s.id === selectedSchedule);
+  const bus = buses.find(b => b.id === schedule?.busId);
+  const route = routes.find(r => r.id === schedule?.routeId);
 
   return (
     <div className="p-6">
@@ -44,6 +144,21 @@ const SeatManagementPage: React.FC = () => {
           </p>
         </div>
       </div>
+
+      {error && (
+        <div className="mt-4 bg-red-50 border-l-4 border-red-400 p-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="mt-6 space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -63,26 +178,33 @@ const SeatManagementPage: React.FC = () => {
             fullWidth
           />
           <Select
-            options={mockSchedules.map(schedule => ({
-              value: schedule.id,
-              label: `${mockBuses.find(b => b.id === schedule.busId)?.name} - ${schedule.departureTime}`
+            options={filteredSchedules.map(schedule => ({
+              value: schedule.id.toString(),
+              label: `${buses.find(b => b.id === schedule.busId)?.busName || 'Unknown Bus'} - ${schedule.departureTime}`
             }))}
-            value={selectedSchedule}
-            onChange={(e) => handleScheduleSelect(e.target.value)}
+            value={selectedSchedule !== null ? selectedSchedule.toString() : ''}
+            onChange={(e) => handleScheduleSelect(Number(e.target.value))}
             placeholder="Select Schedule"
             fullWidth
+            disabled={loading.schedules}
           />
         </div>
       </div>
 
-      {showSeatDetails && schedule && bus && route && (
+      {loading.seats && (
+        <div className="mt-8 flex justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      )}
+
+      {showSeatDetails && schedule && bus && route && !loading.seats && (
         <div className="mt-8">
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <h3 className="text-lg font-medium mb-2">Bus Details</h3>
                 <div className="space-y-2">
-                  <p><span className="font-medium">Bus Name:</span> {bus.name}</p>
+                  <p><span className="font-medium">Bus Name:</span> {bus.busName}</p>
                   <p><span className="font-medium">Bus Number:</span> {bus.busNumber}</p>
                   <p><span className="font-medium">Type:</span> {bus.busType}</p>
                   <p><span className="font-medium">Total Seats:</span> {bus.totalSeats}</p>
@@ -92,20 +214,20 @@ const SeatManagementPage: React.FC = () => {
               <div>
                 <h3 className="text-lg font-medium mb-2">Route Details</h3>
                 <div className="space-y-2">
-                  <p><span className="font-medium">From:</span> {route.source}</p>
-                  <p><span className="font-medium">To:</span> {route.destination}</p>
-                  <p><span className="font-medium">Duration:</span> {route.duration}</p>
-                  <p><span className="font-medium">Distance:</span> {route.distance} km</p>
+                  <p><span className="font-medium">From:</span> {route.sourceCity}</p>
+                  <p><span className="font-medium">To:</span> {route.destinationCity}</p>
+                  <p><span className="font-medium">Duration:</span> {route.totalDuration}</p>
+                  <p><span className="font-medium">Distance:</span> {route.totalDistance} km</p>
                 </div>
               </div>
               
               <div>
                 <h3 className="text-lg font-medium mb-2">Schedule Details</h3>
                 <div className="space-y-2">
-                  <p><span className="font-medium">Date:</span> {schedule.date}</p>
+                  <p><span className="font-medium">Date:</span> {new Date(schedule.scheduleDate).toLocaleDateString()}</p>
                   <p><span className="font-medium">Departure:</span> {schedule.departureTime}</p>
                   <p><span className="font-medium">Arrival:</span> {schedule.arrivalTime}</p>
-                  <p><span className="font-medium">Available Seats:</span> {schedule.availableSeats}</p>
+                  <p><span className="font-medium">Available Seats:</span> {selectedSeats.filter(s => s.seatStatus === 'AVAILABLE').length}</p>
                 </div>
               </div>
             </div>
@@ -115,22 +237,22 @@ const SeatManagementPage: React.FC = () => {
             <h3 className="text-lg font-medium mb-4">Seat Layout</h3>
             
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              {seats.map((seat) => (
+              {selectedSeats.map((seat) => (
                 <div
                   key={seat.id}
                   className="border rounded-lg p-4 space-y-2"
                 >
                   <div className="flex justify-between items-center">
-                    <span className="font-medium">Seat {seat.number}</span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(seat.status)}`}>
-                      {seat.status}
+                    <span className="font-medium">Seat {seat.seatNumber}</span>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(seat.seatStatus)}`}>
+                      {seat.seatStatus}
                     </span>
                   </div>
                   <div className="text-sm text-gray-500">
-                    <p>Type: {seat.type}</p>
-                    <p>Price: ₹{seat.price}</p>
+                    <p>Type: {seat.seatType}</p>
+                    <p>Price: ₹{seat.seatPrice}</p>
                   </div>
-                  {seat.status === 'booked' && (
+                  {seat.seatStatus === 'BOOKED' && (
                     <Button
                       variant="outline"
                       size="sm"
@@ -152,19 +274,19 @@ const SeatManagementPage: React.FC = () => {
                 <div className="bg-green-50 rounded-lg p-4">
                   <p className="text-green-800 font-medium">Available Seats</p>
                   <p className="text-2xl font-bold text-green-600">
-                    {seats.filter(seat => seat.status === 'available').length}
+                    {selectedSeats.filter(seat => seat.seatStatus === 'AVAILABLE').length}
                   </p>
                 </div>
                 <div className="bg-red-50 rounded-lg p-4">
                   <p className="text-red-800 font-medium">Booked Seats</p>
                   <p className="text-2xl font-bold text-red-600">
-                    {seats.filter(seat => seat.status === 'booked').length}
+                    {selectedSeats.filter(seat => seat.seatStatus === 'BOOKED').length}
                   </p>
                 </div>
                 <div className="bg-blue-50 rounded-lg p-4">
                   <p className="text-blue-800 font-medium">Total Revenue</p>
                   <p className="text-2xl font-bold text-blue-600">
-                    ₹{seats.filter(seat => seat.status === 'booked').reduce((sum, seat) => sum + seat.price, 0)}
+                    ₹{selectedSeats.filter(seat => seat.seatStatus === 'BOOKED').reduce((sum, seat) => sum + seat.seatPrice, 0)}
                   </p>
                 </div>
               </div>
