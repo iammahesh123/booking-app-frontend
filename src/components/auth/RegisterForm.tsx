@@ -5,19 +5,27 @@ import { useAuth } from '../../context/AuthContext';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
 
+interface RegisterFormData {
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  password: string;
+  confirmPassword: string;
+}
+
 const RegisterForm: React.FC = () => {
-  const [formData, setFormData] = useState({
-    name: '',
+  const [formData, setFormData] = useState<RegisterFormData>({
+    fullName: '',
     email: '',
-    phone: '',
+    phoneNumber: '',
     password: '',
     confirmPassword: '',
   });
   
   const [errors, setErrors] = useState({
-    name: '',
+    fullName: '',
     email: '',
-    phone: '',
+    phoneNumber: '',
     password: '',
     confirmPassword: '',
     general: '',
@@ -35,7 +43,6 @@ const RegisterForm: React.FC = () => {
       [name]: value
     }));
     
-    // Clear errors when user types
     if (errors[name as keyof typeof errors]) {
       setErrors(prev => ({
         ...prev,
@@ -44,12 +51,12 @@ const RegisterForm: React.FC = () => {
     }
   };
   
-  const validate = () => {
+  const validate = (): boolean => {
     let valid = true;
     const newErrors = { ...errors };
     
-    if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
+    if (!formData.fullName.trim()) {
+      newErrors.fullName = 'Name is required';
       valid = false;
     }
     
@@ -61,8 +68,8 @@ const RegisterForm: React.FC = () => {
       valid = false;
     }
     
-    if (formData.phone && !/^\d{10}$/.test(formData.phone.replace(/[-()\s]/g, ''))) {
-      newErrors.phone = 'Phone number is invalid';
+    if (formData.phoneNumber && !/^\d{10}$/.test(formData.phoneNumber)) {
+      newErrors.phoneNumber = 'Phone number must be 10 digits';
       valid = false;
     }
     
@@ -91,17 +98,23 @@ const RegisterForm: React.FC = () => {
     }
     
     setIsLoading(true);
+    setErrors(prev => ({ ...prev, general: '' }));
     
     try {
       await register(
-        formData.name,
+        formData.fullName,
         formData.email,
         formData.password,
-        formData.phone
+        formData.phoneNumber || undefined
       );
       
-      navigate('/');
-    }  finally {
+      navigate('/'); 
+    } catch (error: any) {
+      setErrors(prev => ({
+        ...prev,
+        general: error.message || 'Registration failed. Please try again.'
+      }));
+    } finally {
       setIsLoading(false);
     }
   };
@@ -111,15 +124,15 @@ const RegisterForm: React.FC = () => {
       <div>
         <Input
           label="Full Name"
-          name="name"
+          name="fullName"
           type="text"
-          value={formData.name}
+          value={formData.fullName}
           onChange={handleChange}
           required
           fullWidth
           placeholder="Enter your full name"
           leftIcon={<User size={16} className="text-gray-500" />}
-          error={errors.name}
+          error={errors.fullName}
         />
       </div>
       
@@ -141,14 +154,14 @@ const RegisterForm: React.FC = () => {
       <div>
         <Input
           label="Phone Number"
-          name="phone"
+          name="phoneNumber"
           type="tel"
-          value={formData.phone}
+          value={formData.phoneNumber}
           onChange={handleChange}
           fullWidth
           placeholder="Enter your phone number (optional)"
           leftIcon={<Phone size={16} className="text-gray-500" />}
-          error={errors.phone}
+          error={errors.phoneNumber}
         />
       </div>
       
@@ -183,7 +196,11 @@ const RegisterForm: React.FC = () => {
         />
       </div>
       
-      {errors.general && <p className="text-red-500 text-sm">{errors.general}</p>}
+      {errors.general && (
+        <div className="text-red-500 text-sm text-center">
+          {errors.general}
+        </div>
+      )}
       
       <div className="pt-2">
         <Button 
@@ -196,7 +213,7 @@ const RegisterForm: React.FC = () => {
         </Button>
       </div>
       
-      <p className="text-center text-sm text-gray-600">
+      {/* <p className="text-center text-sm text-gray-600">
         Already have an account?{' '}
         <a 
           href="/login" 
@@ -208,7 +225,7 @@ const RegisterForm: React.FC = () => {
         >
           Sign in
         </a>
-      </p>
+      </p> */}
     </form>
   );
 };

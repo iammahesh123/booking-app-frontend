@@ -6,7 +6,7 @@ export const mockUsers: User[] = [
     name: "John Doe",
     email: "customer@example.com",
     phone: "1234567890",
-    role: "customer",
+    role: "CUSTOMER",
   },
   {
     id: "2",
@@ -20,13 +20,13 @@ export const mockUsers: User[] = [
     name: "Admin User",
     email: "admin@example.com",
     phone: "5556667777",
-    role: "admin",
+    role: "ADMIN",
   }
 ];
 
 export const mockBuses: Bus[] = [
   {
-    id: "bus1",
+    id: 1,
     busName: "Royal Cruiser",
     busNumber: "KA-01-F-7777",
     busType: "AC",
@@ -35,25 +35,25 @@ export const mockBuses: Bus[] = [
     operatorName: "Sharma Travels",
   },
   {
-    id: "bus2",
+    id: 2,
     busName: "Night Rider",
     busNumber: "MH-04-AB-9999",
-    busType: "Sleeper",
+    busType: "SLEEPER",
     totalSeats: 30,
     busAmenities: ["WiFi", "Charging Point", "Blankets", "Air Conditioning"],
     operatorName: "National Travels",
   },
   {
-    id: "bus3",
+    id: 3,
     busName: "City Express",
     busNumber: "DL-01-AB-1234",
-    busType: "Non-AC",
+    busType: "NON_AC",
     totalSeats: 45,
     busAmenities: ["Charging Point", "Water Bottle"],
     operatorName: "Delhi Express",
   },
   {
-    id: "bus4",
+    id: 4,
     busName: "Golden Chariot",
     busNumber: "TN-07-CD-4567",
     busType: "AC",
@@ -62,10 +62,10 @@ export const mockBuses: Bus[] = [
     operatorName: "Southern Travels",
   },
   {
-    id: "bus5",
+    id: 5,
     busName: "Mountain Safari",
     busNumber: "HP-03-XY-7890",
-    busType: "Semi-Sleeper",
+    busType: "SEMI_SLEEPER",
     totalSeats: 35,
     busAmenities: ["Charging Point", "Reading Light", "Air Conditioning"],
     operatorName: "Himalayan Tours",
@@ -187,9 +187,9 @@ export const mockSchedules: Schedule[] = [
     routeId: 1,
     departureTime: "21:00",
     arrivalTime: "15:30",
-    date: "2025-01-15",
-    availableSeats: 28,
-    fare: 1800,
+    scheduleDate: "2025-01-15",
+    totalSeats: 28,
+    farePrice: 1800,
   },
   {
     id: 2,
@@ -197,9 +197,9 @@ export const mockSchedules: Schedule[] = [
     routeId: 2,
     departureTime: "22:30",
     arrivalTime: "06:45",
-    date: "2025-01-15",
-    availableSeats: 18,
-    fare: 1200,
+    scheduleDate: "2025-01-15",
+    totalSeats: 18,
+    farePrice: 1200,
   },
   {
     id: 3,
@@ -207,9 +207,9 @@ export const mockSchedules: Schedule[] = [
     routeId: 3,
     departureTime: "08:15",
     arrivalTime: "14:45",
-    date: "2025-01-15",
-    availableSeats: 32,
-    fare: 850,
+    scheduleDate: "2025-01-15",
+    totalSeats: 32,
+    farePrice: 850,
   },
   {
     id: 4,
@@ -217,9 +217,9 @@ export const mockSchedules: Schedule[] = [
     routeId: 4,
     departureTime: "10:00",
     arrivalTime: "13:45",
-    date: "2025-01-15",
-    availableSeats: 25,
-    fare: 450,
+    scheduleDate: "2025-01-15",
+    totalSeats: 25,
+    farePrice: 450,
   },
   {
     id: 5,
@@ -227,9 +227,9 @@ export const mockSchedules: Schedule[] = [
     routeId: 5,
     departureTime: "07:30",
     arrivalTime: "12:45",
-    date: "2025-01-15",
-    availableSeats: 22,
-    fare: 650,
+    scheduleDate: "2025-01-15",
+    totalSeats: 22,
+    farePrice: 650,
   },
   {
     id: 6,
@@ -237,13 +237,13 @@ export const mockSchedules: Schedule[] = [
     routeId: 1,
     departureTime: "18:00",
     arrivalTime: "12:30",
-    date: "2025-01-15",
-    availableSeats: 35,
-    fare: 1750,
+    scheduleDate: "2025-01-15",
+    totalSeats: 35,
+    farePrice: 1750,
   }
 ];
 
-export const generateSeats = (scheduleId: string): Seat[] => {
+export const generateSeats = (scheduleId: number): Seat[] => {
   const seats: Seat[] = [];
   const rows = 10;
   const seatsPerRow = 4; // 2 on each side with an aisle
@@ -265,17 +265,17 @@ export const generateSeats = (scheduleId: string): Seat[] => {
       }
       
       // Generate price (window seats are slightly more expensive)
-      const basePrice = scheduleId === 'schedule1' ? 1800 : 
-                        scheduleId === 'schedule2' ? 1200 : 
-                        scheduleId === 'schedule3' ? 850 : 
-                        scheduleId === 'schedule4' ? 450 : 
-                        scheduleId === 'schedule5' ? 650 : 1750;
+      const basePrice = scheduleId === 1 ? 1800 : 
+                        scheduleId === 2 ? 1200 : 
+                        scheduleId === 3 ? 850 : 
+                        scheduleId === 4 ? 450 : 
+                        scheduleId === 5 ? 650 : 1750;
       
       const price = type === 'window' ? basePrice + 50 : basePrice;
       
       seats.push({
-        id: `${scheduleId}_${seatNumber}`,
-        number: seatNumber,
+        id: row * 10 + seatNum, // or any unique number logic
+        seatNumber: seatNumber,
         type,
         status,
         price,
@@ -293,15 +293,15 @@ export const mockBookings: Booking[] = [
     scheduleId: "schedule1",
     bookedSeats: [
       {
-        id: "schedule1_1A",
-        number: "1A",
+        id: 1,
+        seatNumber: "1A",
         type: "window",
         status: "booked",
         price: 1850,
       },
       {
-        id: "schedule1_1B",
-        number: "1B",
+        id: 2,
+        seatNumber: "1B",
         type: "aisle",
         status: "booked",
         price: 1800,

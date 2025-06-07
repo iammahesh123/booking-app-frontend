@@ -26,12 +26,12 @@ const MyBookingsPage = React.lazy(() => import('./pages/customer/MyBookingsPage'
 // const AgentDashboardPage = React.lazy(() => import('./pages/agent/DashboardPage'));
 
 // Route guards
-const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles?: string[] }> = ({ 
-  children, 
-  allowedRoles = [] 
+const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles?: string[] }> = ({
+  children,
+  allowedRoles = []
 }) => {
   const { isAuthenticated, user, isLoading } = useAuth();
-  
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -39,15 +39,15 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles?: strin
       </div>
     );
   }
-  
+
   if (!isAuthenticated) {
     return <Navigate to="/" />;
   }
-  
+
   if (allowedRoles.length > 0 && user && !allowedRoles.includes(user.role)) {
     return <Navigate to="/" />;
   }
-  
+
   return <>{children}</>;
 };
 
@@ -67,46 +67,46 @@ const App: React.FC = () => {
             <Route path="/search" element={<SearchResultsPage />} />
             {/* <Route path="/profile" element={<PassengerInfoPage />} /> */}
             <Route path="/booking/:scheduleId" element={<BookingPage />} />
-            <Route 
-              path="/booking/:scheduleId/passengers" 
+            <Route
+              path="/booking/:scheduleId/passengers"
               element={
                 <ProtectedRoute>
                   <PassengerInfoPage />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/booking/confirmation/:bookingId" 
+            <Route
+              path="/booking/confirmation/:bookingId"
               element={
                 <ProtectedRoute>
                   <BookingConfirmationPage />
                 </ProtectedRoute>
-              } 
+              }
             />
-                        <Route 
-              path="/bookings" 
+            <Route
+              path="/bookings"
               element={
                 <ProtectedRoute>
                   <MyBookingsPage />
                 </ProtectedRoute>
-              } 
+              }
             />
-                        <Route 
-              path="/profile" 
+            <Route
+              path="/profile"
               element={
                 <ProtectedRoute>
                   <ProfilePage />
                 </ProtectedRoute>
-              } 
+              }
             />
-             {/* Admin Routes */}
-             <Route 
-              path="/admin/*" 
+            {/* Admin Routes */}
+            <Route
+              path="/admin/*"
               element={
                 <ProtectedRoute allowedRoles={['admin']}>
                   <AdminDashboardPage />
                 </ProtectedRoute>
-              } 
+              }
             />
           </Routes>
         </React.Suspense>

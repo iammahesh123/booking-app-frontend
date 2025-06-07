@@ -1,15 +1,16 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Bus, 
-  Users, 
-  MapPin, 
-  Calendar, 
+import {
+  LayoutDashboard,
+  Bus,
+  Users,
+  MapPin,
+  Calendar,
   CreditCard,
   Settings,
   HelpCircle,
-  LogOut
+  LogOut,
+  Armchair
 } from 'lucide-react';
 // import { useAuth } from '../../context/AuthContext';
 
@@ -24,11 +25,10 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ to, icon, label, active }) =>
   return (
     <Link
       to={to}
-      className={`flex items-center space-x-3 px-4 py-3 rounded-md transition-colors ${
-        active 
-          ? 'bg-primary/10 text-primary font-medium' 
+      className={`flex items-center space-x-3 px-4 py-3 rounded-md transition-colors ${active
+          ? 'bg-primary/10 text-primary font-medium'
           : 'text-gray-700 hover:bg-gray-100'
-      }`}
+        }`}
     >
       <span className="text-current">{icon}</span>
       <span>{label}</span>
@@ -38,48 +38,54 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ to, icon, label, active }) =>
 
 const AdminSidebar: React.FC = () => {
   const location = useLocation();
-//   const { logout } = useAuth();
-  
+  //   const { logout } = useAuth();
+
   const menuItems = [
-    { 
-      to: '/admin', 
-      icon: <LayoutDashboard size={20} />, 
+    {
+      to: '/admin',
+      icon: <LayoutDashboard size={20} />,
       label: 'Dashboard',
       exact: true
     },
-    { 
-      to: '/admin/buses', 
-      icon: <Bus size={20} />, 
+    {
+      to: '/admin/buses',
+      icon: <Bus size={20} />,
       label: 'Buses',
       exact: false
     },
-    { 
-      to: '/admin/users', 
-      icon: <Users size={20} />, 
+    {
+      to: '/admin/users',
+      icon: <Users size={20} />,
       label: 'Users',
       exact: false
     },
-    { 
-      to: '/admin/routes', 
-      icon: <MapPin size={20} />, 
+    {
+      to: '/admin/seats',
+      icon: <Armchair size={20} />,
+      label: 'Seat Management',
+      exact: false
+    },
+    {
+      to: '/admin/routes',
+      icon: <MapPin size={20} />,
       label: 'Routes',
       exact: false
     },
-    { 
-      to: '/admin/schedules', 
-      icon: <Calendar size={20} />, 
+    {
+      to: '/admin/schedules',
+      icon: <Calendar size={20} />,
       label: 'Schedules',
       exact: false
     },
-    { 
-      to: '/admin/transactions', 
-      icon: <CreditCard size={20} />, 
+    {
+      to: '/admin/transactions',
+      icon: <CreditCard size={20} />,
       label: 'Transactions',
       exact: false
     },
-    { 
-      to: '/admin/settings', 
-      icon: <Settings size={20} />, 
+    {
+      to: '/admin/settings',
+      icon: <Settings size={20} />,
       label: 'Settings',
       exact: false
     }
@@ -103,7 +109,7 @@ const AdminSidebar: React.FC = () => {
           </div>
         </div>
       </div>
-      
+
       <div className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
         {menuItems.map((item) => (
           <SidebarItem
@@ -115,7 +121,7 @@ const AdminSidebar: React.FC = () => {
           />
         ))}
       </div>
-      
+
       <div className="mt-auto border-t p-3 space-y-1">
         <Link
           to="/admin/help"
@@ -124,9 +130,9 @@ const AdminSidebar: React.FC = () => {
           <HelpCircle size={20} />
           <span>Help & Support</span>
         </Link>
-        
+
         <button
-        //   onClick={logout}
+          //   onClick={logout}
           className="flex items-center space-x-3 px-4 py-3 rounded-md text-red-600 hover:bg-red-50 w-full text-left transition-colors"
         >
           <LogOut size={20} />

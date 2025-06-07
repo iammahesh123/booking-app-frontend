@@ -22,15 +22,28 @@ const LoginForm: React.FC = () => {
     try {
       // For demo, use these emails with any password:
       // customer@example.com, agent@example.com, admin@example.com
-      await login(email, password);
+      const user = await login(email, password);
       
-      // Redirect based on role
-      if (email === 'admin@example.com') {
-        navigate('/admin');
-      } else if (email === 'agent@example.com') {
-        navigate('/agent');
-      } else {
-        navigate('/');
+  const userData = localStorage.getItem('busBookingUser');
+      if (!userData) {
+        throw new Error('Authentication failed');
+      }
+      
+      const { role } = JSON.parse(userData);
+      
+      // Role-based navigation
+      switch(role.toLowerCase()) {
+        case 'admin':
+          navigate('/admin');
+          break;
+        case 'driver':
+          navigate('/driver/dashboard');
+          break;
+        case 'customer':
+          navigate('/');
+          break;
+        default:
+          navigate('/');
       }
     } finally {
       setIsLoading(false);
@@ -85,7 +98,7 @@ const LoginForm: React.FC = () => {
         </Button>
       </div>
       
-      <p className="text-center text-sm text-gray-600">
+      {/* <p className="text-center text-sm text-gray-600">
         Don't have an account yet?{' '}
         <a 
           href="/register" 
@@ -97,7 +110,7 @@ const LoginForm: React.FC = () => {
         >
           Sign up
         </a>
-      </p>
+      </p> */}
     </form>
   );
 };

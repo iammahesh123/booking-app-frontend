@@ -1,17 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Edit, Trash2, Search } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
-import { Bus } from '../../types';
+import { Bus, OrderBy } from '../../types';
 import { busApi } from '../../apiConfig/Bus';
 import Select from 'react-select';
+import api from '../../apiConfig/axios';
 
 interface FormErrors {
   busName?: string;
   busNumber?: string;
   busType?: string;
   totalSeats?: string;
-  operator?: string;
+  operatorName?: string;
 }
 
 const BusesPage: React.FC = () => {
@@ -22,14 +23,23 @@ const BusesPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
+     id: 0,
     busName: '',
     busNumber: '',
-    busType: 'AC' as 'AC' | 'Non-AC' | 'Sleeper' | 'Semi-Sleeper',
+    busType: 'AC' as 'AC' | 'NON_AC' | 'SLEEPER' | 'SEMI_SLEEPER',
     totalSeats: 40,
     busAmenities: [] as string[],
     operatorName: ''
   });
   const [formErrors, setFormErrors] = useState<FormErrors>({});
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalRecords, setTotalRecords] = useState(0);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [sortColumn, setSortColumn] = useState<string>('id');
+  const [orderBy, setOrderBy] = useState<OrderBy>(OrderBy.ASC);
 
   const amenityOptions = [
     { value: 'WIFI', label: 'WiFi' },
@@ -44,14 +54,24 @@ const BusesPage: React.FC = () => {
     { value: 'BLANKET', label: 'Blanket' },
   ];
 
-  // Fetch buses on component mount
+  // Fetch buses on component mount and when pagination changes
   useEffect(() => {
     const fetchBuses = async () => {
       try {
         setIsLoading(true);
-        const data = await busApi.getAll();
-        setBuses(data);
-        setError(null);
+        const response = await api.get('/bus', {
+          params: {
+            pageNumber: currentPage - 1,
+            pageSize: itemsPerPage,
+            sortColumn: sortColumn,
+            orderBy: orderBy,
+            searchTerm: searchTerm
+          }
+        });
+        console.log('Fetched buses:', response.data);
+        setBuses(response.data.data);
+        setTotalPages(response.data.totalPages);
+        setTotalRecords(response.data.totalRecords);
       } catch (err) {
         setError('Failed to fetch buses. Please try again later.');
         console.error('Fetch buses error:', err);
@@ -61,17 +81,19 @@ const BusesPage: React.FC = () => {
     };
 
     fetchBuses();
-  }, []);
+  }, [currentPage, itemsPerPage, sortColumn, orderBy, searchTerm]);
 
-  // Filter buses based on search term
-  const filteredBuses = buses.filter(bus => {
+  const filteredBuses = buses?.filter(bus => {
+    if (!bus) return false;
     const searchLower = searchTerm.toLowerCase();
     return (
       (bus.busName?.toLowerCase() || '').includes(searchLower) ||
       (bus.busNumber?.toLowerCase() || '').includes(searchLower) ||
       (bus.operatorName?.toLowerCase() || '').includes(searchLower)
     );
-  });
+  }) || [];
+
+  console.log('Filtered buses:', filteredBuses);
 
   // Validate form fields
   const validateForm = (): boolean => {
@@ -86,7 +108,7 @@ const BusesPage: React.FC = () => {
     }
 
     if (!formData.operatorName.trim()) {
-      errors.operator = 'Operator is required';
+      errors.operatorName = 'Operator is required';
     }
 
     if (!formData.totalSeats || formData.totalSeats <= 0) {
@@ -97,8 +119,26 @@ const BusesPage: React.FC = () => {
     return Object.keys(errors).length === 0;
   };
 
+  // Pagination controls
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const goToPreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
   // Handle form submission (both add and update)
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!validateForm()) return;
 
     try {
@@ -121,7 +161,7 @@ const BusesPage: React.FC = () => {
   };
 
   // Handle bus deletion
-  const handleDeleteBus = async (busId: string) => {
+  const handleDeleteBus = async (busId: number) => {
     if (!window.confirm('Are you sure you want to delete this bus?')) return;
 
     try {
@@ -136,6 +176,7 @@ const BusesPage: React.FC = () => {
   // Reset form to default values
   const resetForm = () => {
     setFormData({
+       id: 0,
       busName: '',
       busNumber: '',
       busType: 'AC',
@@ -157,6 +198,7 @@ const BusesPage: React.FC = () => {
   const handleEditClick = (bus: Bus) => {
     setSelectedBus(bus);
     setFormData({
+       id: bus.id,
       busName: bus.busName || '',
       busNumber: bus.busNumber || '',
       busType: bus.busType || 'AC',
@@ -180,6 +222,9 @@ const BusesPage: React.FC = () => {
       setFormErrors(prev => ({ ...prev, [name]: undefined }));
     }
   };
+
+  if (isLoading && buses.length === 0) return <div>Loading Buses...</div>;
+  if (error) return <div className="text-red-500">{error}</div>;
 
   return (
     <div className="p-6">
@@ -215,16 +260,38 @@ const BusesPage: React.FC = () => {
         </div>
       )}
 
-      {/* Search Bar */}
-      <div className="mt-6">
-        <Input
-          type="text"
-          placeholder="Search buses..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          leftIcon={<Search size={20} />}
-          fullWidth
-        />
+      {/* Search and Pagination Controls */}
+      <div className="mt-6 flex flex-col sm:flex-row justify-between gap-4">
+        <div className="flex-1">
+          <Input
+            type="text"
+            placeholder="Search buses..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            leftIcon={<Search size={20} />}
+            fullWidth
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <label htmlFor="itemsPerPage" className="text-sm text-gray-700">
+            Items per page:
+          </label>
+          <select
+            id="itemsPerPage"
+            value={itemsPerPage}
+            onChange={(e) => {
+              setItemsPerPage(Number(e.target.value));
+              setCurrentPage(1);
+            }}
+            className="rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+          >
+            {[5, 10, 20, 50].map(option => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Loading State */}
@@ -285,7 +352,7 @@ const BusesPage: React.FC = () => {
                                   key={index}
                                   className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800"
                                 >
-                                  {amenity}
+                                  {amenity.replace('_', ' ')}
                                 </span>
                               ))}
                             </div>
@@ -325,6 +392,62 @@ const BusesPage: React.FC = () => {
         </div>
       )}
 
+      {/* Pagination controls */}
+      <div className="flex flex-col sm:flex-row items-center justify-between mt-4 gap-4">
+        <div className="text-sm text-gray-700">
+          Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
+          {Math.min(currentPage * itemsPerPage, totalRecords)} of {totalRecords} entries
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={goToPreviousPage}
+            disabled={currentPage === 1 || isLoading}
+            leftIcon={<ChevronLeft size={16} />}
+            size="sm"
+          >
+            Previous
+          </Button>
+          
+          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+            let pageNum;
+            if (totalPages <= 5) {
+              pageNum = i + 1;
+            } else if (currentPage <= 3) {
+              pageNum = i + 1;
+            } else if (currentPage >= totalPages - 2) {
+              pageNum = totalPages - 4 + i;
+            } else {
+              pageNum = currentPage - 2 + i;
+            }
+
+            return (
+              <Button
+                key={pageNum}
+                variant={currentPage === pageNum ? 'primary' : 'outline'}
+                onClick={() => goToPage(pageNum)}
+                disabled={isLoading}
+                className="w-10 h-10 p-0 flex items-center justify-center"
+                size="sm"
+              >
+                {pageNum}
+              </Button>
+            );
+          })}
+          
+          <Button
+            variant="outline"
+            onClick={goToNextPage}
+            disabled={currentPage === totalPages || isLoading}
+            rightIcon={<ChevronRight size={16} />}
+            size="sm"
+          >
+            Next
+          </Button>
+        </div>
+      </div>
+
       {/* Add/Edit Bus Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
@@ -332,7 +455,7 @@ const BusesPage: React.FC = () => {
             <h3 className="text-lg font-medium mb-4">
               {selectedBus ? 'Edit Bus' : 'Add New Bus'}
             </h3>
-            <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+            <form className="space-y-4" onSubmit={handleSubmit}>
               {/* Bus Name */}
               <div>
                 <Input
@@ -371,9 +494,9 @@ const BusesPage: React.FC = () => {
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
                 >
                   <option value="AC">AC</option>
-                  <option value="Non-AC">Non-AC</option>
-                  <option value="Sleeper">Sleeper</option>
-                  <option value="Semi-Sleeper">Semi-Sleeper</option>
+                  <option value="NON_AC">Non-AC</option>
+                  <option value="SLEEPER">Sleeper</option>
+                  <option value="SEMI_SLEEPER">Semi-Sleeper</option>
                 </select>
               </div>
 
@@ -388,7 +511,7 @@ const BusesPage: React.FC = () => {
                   options={amenityOptions}
                   value={amenityOptions.filter(option => formData.busAmenities.includes(option.value))}
                   onChange={(selected) => {
-                    const selectedValues = selected.map(option => option.value);
+                    const selectedValues = selected ? selected.map(option => option.value) : [];
                     setFormData(prev => ({
                       ...prev,
                       busAmenities: selectedValues,
@@ -397,19 +520,7 @@ const BusesPage: React.FC = () => {
                   className="basic-multi-select"
                   classNamePrefix="select"
                 />
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {formData.busAmenities.map((amenity) => (
-                    <span
-                      key={amenity}
-                      className="inline-block bg-blue-100 text-blue-700 text-sm px-3 py-1 rounded-full"
-                    >
-                      {amenity.replace('_', ' ')}
-                    </span>
-                  ))}
-                </div>
-
               </div>
-
 
               {/* Total Seats */}
               <div>
@@ -422,6 +533,7 @@ const BusesPage: React.FC = () => {
                   required
                   fullWidth
                   error={formErrors.totalSeats}
+                  min="1"
                 />
               </div>
 
@@ -434,7 +546,7 @@ const BusesPage: React.FC = () => {
                   onChange={handleInputChange}
                   required
                   fullWidth
-                  error={formErrors.operator}
+                  error={formErrors.operatorName}
                 />
               </div>
 

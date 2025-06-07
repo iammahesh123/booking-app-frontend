@@ -35,12 +35,12 @@ const formatTime = (timeString: string) => {
   return `${hour12}:${minutes} ${ampm}`;
 };
 
-const getBusDetails = (busId: number, buses: Bus[]) => {
-  return buses.find(bus => bus.id) || null;
+const getBusDetails = (busId: number, buses: Bus[]): Bus | null => {
+  return buses.find(bus => bus.id === busId) || null;
 };
 
-const getRouteDetails = (routeId: number, routes: Route[]) => {
-  return routes.find(route => route.id === routeId) || null;
+const getRouteDetails = (routeId: number, routes: Route[]): Route | null => {
+  return routes.find(route => route.id) || null;
 };
 
 const BusList: React.FC<BusListProps> = ({ schedules, buses, routes, date }) => {
@@ -48,17 +48,19 @@ const BusList: React.FC<BusListProps> = ({ schedules, buses, routes, date }) => 
   const [busType, setBusType] = useState('all');
   const [departureTime, setDepartureTime] = useState('all');
   const [sortBy, setSortBy] = useState('departure');
-  const [showStops, setShowStops] = useState(false);
-  
+  const [showStops, setShowStops] = useState<number | null>(null);
+
   const navigate = useNavigate();
   
   const filteredSchedules = schedules.filter(schedule => {
     const bus = getBusDetails(schedule.busId, buses);
     
+    // Filter by bus type
     if (busType !== 'all' && bus?.busType !== busType) {
       return false;
     }
     
+    // Filter by departure time
     if (departureTime !== 'all') {
       const hour = parseInt(schedule.departureTime.split(':')[0]);
       
@@ -84,11 +86,11 @@ const BusList: React.FC<BusListProps> = ({ schedules, buses, routes, date }) => 
     } else if (sortBy === 'duration') {
       const routeA = getRouteDetails(a.routeId, routes);
       const routeB = getRouteDetails(b.routeId, routes);
-      return routeA?.totalDuration.localeCompare(routeB?.totalDuration || '') || 0;
+      return (routeA?.totalDuration || '').localeCompare(routeB?.totalDuration || '');
     } else if (sortBy === 'price') {
-      return a.fare - b.fare;
+      return a.farePrice - b.farePrice;
     } else if (sortBy === 'seats') {
-      return b.availableSeats - a.availableSeats;
+      return b.totalSeats - a.totalSeats;
     }
     return 0;
   });
@@ -111,7 +113,11 @@ const BusList: React.FC<BusListProps> = ({ schedules, buses, routes, date }) => 
         return null;
     }
   };
-  
+
+  const toggleShowStops = (scheduleId: number) => {
+    setShowStops(showStops === scheduleId ? null : scheduleId);
+  };
+
   return (
     <div className="space-y-4">
       <div className="bg-white rounded-lg shadow p-4">
@@ -236,19 +242,21 @@ const BusList: React.FC<BusListProps> = ({ schedules, buses, routes, date }) => 
             const bus = getBusDetails(schedule.busId, buses);
             const route = getRouteDetails(schedule.routeId, routes);
             
+            if (!bus || !route) return null;
+
             return (
               <div key={schedule.id} className="bg-white rounded-lg shadow overflow-hidden hover:shadow-md transition-shadow">
                 <div className="p-4">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                     <div className="mb-4 md:mb-0">
-                      <h3 className="text-lg font-semibold">{bus?.busName}</h3>
-                      <p className="text-sm text-gray-500">{bus?.busType} • {bus?.busNumber}</p>
+                      <h3 className="text-lg font-semibold">{bus.busName}</h3>
+                      <p className="text-sm text-gray-500">{bus.busType} • {bus.busNumber}</p>
                     </div>
                     
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 md:gap-8">
                       <div className="text-center">
                         <p className="text-lg font-semibold">{formatTime(schedule.departureTime)}</p>
-                        <p className="text-sm text-gray-500">{route?.sourceCity}</p>
+                        <p className="text-sm text-gray-500">{route.sourceCity}</p>
                       </div>
                       
                       <div className="hidden md:block text-center">
@@ -257,17 +265,17 @@ const BusList: React.FC<BusListProps> = ({ schedules, buses, routes, date }) => 
                           <div className="h-1 w-16 bg-gray-300"></div>
                           <ArrowRight size={14} className="text-gray-400" />
                         </div>
-                        <p className="text-xs text-gray-500 mt-1">{route?.totalDuration}</p>
+                        <p className="text-xs text-gray-500 mt-1">{route.totalDuration}</p>
                       </div>
                       
                       <div className="text-center">
                         <p className="text-lg font-semibold">{formatTime(schedule.arrivalTime)}</p>
-                        <p className="text-sm text-gray-500">{route?.destinationCity}</p>
+                        <p className="text-sm text-gray-500">{route.destinationCity}</p>
                       </div>
                       
                       <div className="text-center">
-                        <p className="text-lg font-semibold text-green-600">₹{schedule.fare}</p>
-                        <p className="text-sm text-gray-500">{schedule.availableSeats} seats</p>
+                        <p className="text-lg font-semibold text-green-600">₹{schedule.farePrice}</p>
+                        <p className="text-sm text-gray-500">{schedule.totalSeats} seats</p>
                       </div>
                     </div>
                   </div>
@@ -275,7 +283,7 @@ const BusList: React.FC<BusListProps> = ({ schedules, buses, routes, date }) => 
                 
                 <div className="px-4 py-3 bg-gray-50 flex flex-col sm:flex-row items-start sm:items-center justify-between border-t border-gray-200">
                   <div className="flex flex-wrap gap-2 mb-3 sm:mb-0">
-                    {bus?.busAmenities.map((amenity, index) => (
+                    {bus.busAmenities.map((amenity, index) => (
                       <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                         {getAmenityIcon(amenity)}
                         <span className="ml-1">{amenity}</span>
@@ -292,20 +300,20 @@ const BusList: React.FC<BusListProps> = ({ schedules, buses, routes, date }) => 
                   </Button>
                 </div>
 
-                {(route?.stops ?? []).length > 0 && (
+                {route.stops.length > 0 && (
                   <div className="px-4 py-2 bg-gray-50 border-t">
                     <button
-                      onClick={() => setShowStops(!showStops)}
+                      onClick={() => toggleShowStops(schedule.id)}
                       className="flex items-center text-sm text-gray-600 hover:text-gray-900"
                     >
                       <MapPin size={16} className="mr-1" />
-                      {route?.stops?.length || 0} stops
+                      {route.stops.length} stops
                       <ChevronsUpDown size={16} className="ml-1" />
                     </button>
                     
-                    {showStops && (
+                    {showStops === schedule.id && (
                       <div className="mt-2 space-y-2">
-                        {route?.stops?.map((stop, index) => (
+                        {route.stops.map((stop, index) => (
                           <div key={index} className="flex items-center text-sm">
                             <div className="w-24 text-gray-500">{stop.stopName}</div>
                             <div className="flex items-center text-gray-600">
