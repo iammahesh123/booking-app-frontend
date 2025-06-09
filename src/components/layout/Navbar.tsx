@@ -39,7 +39,7 @@ const Navbar: React.FC<NavbarProps> = ({ onLoginClick, onRegisterClick }) => {
   const getLinks = () => {
     if (!user) return userLinks.slice(0, 1); // Only home for not logged in
     switch (user.role) {
-      case 'admin':
+      case 'ADMIN':
         return adminLinks;
       default:
         return userLinks;

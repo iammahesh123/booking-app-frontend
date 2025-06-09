@@ -3,10 +3,10 @@ import { Plus, Edit, Trash2, Search, UserPlus } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { User } from '../../types';
-import { mockUsers } from '../../components/utils/MockData';
+// import { mockUsers } from '../../components/utils/MockData';
 
 const UsersPage: React.FC = () => {
-  const [users, setUsers] = useState<User[]>(mockUsers);
+  const [users, setUsers] = useState<User[]>();
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -14,7 +14,7 @@ const UsersPage: React.FC = () => {
     name: '',
     email: '',
     phone: '',
-    role: 'customer' as 'customer' | 'agent' | 'admin'
+    role: 'CUSTOMER' as 'CUSTOMER' | 'ADMIN'
   });
 
   const filteredUsers = users.filter(user =>
@@ -34,7 +34,7 @@ const UsersPage: React.FC = () => {
       name: '',
       email: '',
       phone: '',
-      role: 'customer'
+      role: 'CUSTOMER'
     });
   };
 
@@ -66,7 +66,7 @@ const UsersPage: React.FC = () => {
           <Button
             variant="outline"
             onClick={() => {
-              setFormData({ ...formData, role: 'agent' });
+              setFormData({ ...formData, role: 'ADMIN' });
               setShowAddModal(true);
             }}
             leftIcon={<UserPlus size={20} />}
@@ -76,7 +76,7 @@ const UsersPage: React.FC = () => {
           <Button
             variant="primary"
             onClick={() => {
-              setFormData({ ...formData, role: 'customer' });
+              setFormData({ ...formData, role: 'CUSTOMER' });
               setShowAddModal(true);
             }}
             leftIcon={<Plus size={20} />}
