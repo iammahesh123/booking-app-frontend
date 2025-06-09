@@ -5,11 +5,12 @@ import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/layout/Footer';
 import SeatLayout from '../../components/booking/SeatLayout';
 import { Seat, Schedule, Bus, Route } from '../../types';
-import { mockSchedules, mockBuses, mockRoutes, generateSeats } from '../../components/utils/MockData';
+import { mockSchedules, mockRoutes, mockBuses } from '../../components/utils/MockData';
 
 const BookingPage: React.FC = () => {
   const { scheduleId } = useParams<{ scheduleId: string }>();
   const [searchParams] = useSearchParams();
+
   const date = searchParams.get('date') || '';
   
   const [schedule, setSchedule] = useState<Schedule | null>(null);
@@ -42,8 +43,8 @@ const BookingPage: React.FC = () => {
           setRoute(foundRoute || null);
           
           // Generate seats for this schedule
-          const generatedSeats = generateSeats(scheduleId);
-          setSeats(generatedSeats);
+          // const generatedSeats = generateSeats(scheduleId);
+          // setSeats(generatedSeats);
         } else {
           setError('Schedule not found.');
         }
@@ -164,7 +165,7 @@ const BookingPage: React.FC = () => {
               </div>
               
               <SeatLayout
-                scheduleId={scheduleId || ''}
+                scheduleId={scheduleId ? Number(scheduleId) : 0}
                 seats={seats}
                 date={date}
                 route={route}

@@ -1,28 +1,28 @@
 import { User, Bus, Route, Schedule, Seat, Booking, PopularRoute, BookingSummary } from '../../types';
 
-export const mockUsers: User[] = [
-  {
-    id: "1",
-    name: "John Doe",
-    email: "customer@example.com",
-    phone: "1234567890",
-    role: "CUSTOMER",
-  },
-  {
-    id: "2",
-    name: "Agent Smith",
-    email: "agent@example.com",
-    phone: "9876543210",
-    role: "agent",
-  },
-  {
-    id: "3",
-    name: "Admin User",
-    email: "admin@example.com",
-    phone: "5556667777",
-    role: "ADMIN",
-  }
-];
+// export const mockUsers: User[] = [
+//   {
+//     id: "1",
+//     name: "John Doe",
+//     email: "customer@example.com",
+//     phone: "1234567890",
+//     role: "CUSTOMER",
+//   },
+//   {
+//     id: "2",
+//     name: "Agent Smith",
+//     email: "agent@example.com",
+//     phone: "9876543210",
+//     role: "agent",
+//   },
+//   {
+//     id: "3",
+//     name: "Admin User",
+//     email: "admin@example.com",
+//     phone: "5556667777",
+//     role: "ADMIN",
+//   }
+// ];
 
 export const mockBuses: Bus[] = [
   {
@@ -243,170 +243,53 @@ export const mockSchedules: Schedule[] = [
   }
 ];
 
-export const generateSeats = (scheduleId: number): Seat[] => {
-  const seats: Seat[] = [];
-  const rows = 10;
-  const seatsPerRow = 4; // 2 on each side with an aisle
+// export const generateSeats = (scheduleId: number): Seat[] => {
+//   const seats: Seat[] = [];
+//   const rows = 10;
+//   const seatsPerRow = 4; // 2 on each side with an aisle
   
-  for (let row = 1; row <= rows; row++) {
-    for (let seatNum = 1; seatNum <= seatsPerRow; seatNum++) {
-      const seatLetter = String.fromCharCode(64 + seatNum); // A, B, C, D
-      const seatNumber = `${row}${seatLetter}`;
+//   for (let row = 1; row <= rows; row++) {
+//     for (let seatNum = 1; seatNum <= seatsPerRow; seatNum++) {
+//       const seatLetter = String.fromCharCode(64 + seatNum); // A, B, C, D
+//       const seatNumber = `${row}${seatLetter}`;
       
-      // Randomly decide if a seat is booked or available
-      const status = Math.random() < 0.3 ? 'booked' : 'available';
+//       // Randomly decide if a seat is booked or available
+//       const status = Math.random() < 0.3 ? 'booked' : 'available';
       
-      // Determine seat type
-      let type: 'window' | 'aisle' | 'middle' | 'sleeper';
-      if (seatNum === 1 || seatNum === 4) {
-        type = 'window';
-      } else {
-        type = 'aisle';
-      }
+//       // Determine seat type
+//       let type: 'window' | 'aisle' | 'middle' | 'sleeper';
+//       if (seatNum === 1 || seatNum === 4) {
+//         type = 'window';
+//       } else {
+//         type = 'aisle';
+//       }
       
-      // Generate price (window seats are slightly more expensive)
-      const basePrice = scheduleId === 1 ? 1800 : 
-                        scheduleId === 2 ? 1200 : 
-                        scheduleId === 3 ? 850 : 
-                        scheduleId === 4 ? 450 : 
-                        scheduleId === 5 ? 650 : 1750;
+//       // Generate price (window seats are slightly more expensive)
+//       const basePrice = scheduleId === 1 ? 1800 : 
+//                         scheduleId === 2 ? 1200 : 
+//                         scheduleId === 3 ? 850 : 
+//                         scheduleId === 4 ? 450 : 
+//                         scheduleId === 5 ? 650 : 1750;
       
-      const price = type === 'window' ? basePrice + 50 : basePrice;
+//       const price = type === 'window' ? basePrice + 50 : basePrice;
       
-      seats.push({
-        id: row * 10 + seatNum, // or any unique number logic
-        seatNumber: seatNumber,
-        type,
-        status,
-        price,
-      });
-    }
-  }
+//       seats.push({
+//         id: row * 10 + seatNum, // or any unique number logic
+//         seatNumber: seatNumber,
+//         seatType: type,
+//         seatStatus: status === 'booked' ? 'BOOKED' : 'AVAILABLE',
+//         seatPrice: price,
+//       });
+//     }
+//   }
   
-  return seats;
-};
+//   return seats;
+// };
 
 export const mockBookings: Booking[] = [
-  {
-    id: "booking1",
-    userId: "1",
-    scheduleId: "schedule1",
-    bookedSeats: [
-      {
-        id: 1,
-        seatNumber: "1A",
-        type: "window",
-        status: "booked",
-        price: 1850,
-      },
-      {
-        id: 2,
-        seatNumber: "1B",
-        type: "aisle",
-        status: "booked",
-        price: 1800,
-      }
-    ],
-    passengers: [
-      {
-        name: "John Doe",
-        age: 35,
-        gender: "male",
-        seatNumber: "1A",
-      },
-      {
-        name: "Jane Doe",
-        age: 32,
-        gender: "female",
-        seatNumber: "1B",
-      }
-    ],
-    totalFare: 3650,
-    bookingDate: "2025-01-01",
-    status: "confirmed",
-    paymentStatus: "paid",
-    bookingCode: "TRVL78945",
-  },
-  {
-    id: "booking2",
-    userId: "1",
-    scheduleId: "schedule3",
-    bookedSeats: [
-      {
-        id: "schedule3_5C",
-        number: "5C",
-        type: "aisle",
-        status: "booked",
-        price: 850,
-      }
-    ],
-    passengers: [
-      {
-        name: "John Doe",
-        age: 35,
-        gender: "male",
-        seatNumber: "5C",
-      }
-    ],
-    totalFare: 850,
-    bookingDate: "2025-01-05",
-    status: "confirmed",
-    paymentStatus: "paid",
-    bookingCode: "TRVL23456",
-  },
-  {
-    id: "booking3",
-    userId: "1",
-    scheduleId: "schedule5",
-    bookedSeats: [
-      {
-        id: "schedule5_3A",
-        number: "3A",
-        type: "window",
-        status: "booked",
-        price: 700,
-      },
-      {
-        id: "schedule5_3B",
-        number: "3B",
-        type: "aisle",
-        status: "booked",
-        price: 650,
-      },
-      {
-        id: "schedule5_4A",
-        number: "4A",
-        type: "window",
-        status: "booked",
-        price: 700,
-      }
-    ],
-    passengers: [
-      {
-        name: "John Doe",
-        age: 35,
-        gender: "male",
-        seatNumber: "3A",
-      },
-      {
-        name: "Sarah Johnson",
-        age: 28,
-        gender: "female",
-        seatNumber: "3B",
-      },
-      {
-        name: "Mike Smith",
-        age: 42,
-        gender: "male",
-        seatNumber: "4A",
-      }
-    ],
-    totalFare: 2050,
-    bookingDate: "2025-01-08",
-    status: "cancelled",
-    paymentStatus: "refunded",
-    bookingCode: "TRVL34567",
-  }
+
+
+
 ];
 
 export const mockPopularRoutes: PopularRoute[] = [

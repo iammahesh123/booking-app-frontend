@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { ApiScheduleResponse, Bus, Route, Schedule } from '../types';
 
-const API_BASE_URL = 'http://localhost:8080'; 
+const API_BASE_URL = 'https://bus-booking-svc-latest.onrender.com'; 
 
 // Configure axios instance
 const api = axios.create({

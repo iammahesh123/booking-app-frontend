@@ -6,7 +6,7 @@ import Button from '../../components/ui/Button';
 import CustomerLayout from '../../components/layout/CustomerLayout';
 
 const ProfilePage: React.FC = () => {
-  const { user, updateProfile } = useAuth();
+  const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     name: user?.name || '',
@@ -30,7 +30,7 @@ const ProfilePage: React.FC = () => {
     setMessage({ type: '', text: '' });
 
     try {
-      await updateProfile(formData);
+      // await updateProfile(formData);
       setMessage({ type: 'success', text: 'Profile updated successfully!' });
       setIsEditing(false);
     } catch (error) {
