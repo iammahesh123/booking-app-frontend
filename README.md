@@ -1,54 +1,82 @@
-# React + TypeScript + Vite
+# BlueBus - Bus Booking Application
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Project Overview
 
-Currently, two official plugins are available:
+BlueBus is a web-based bus booking system that allows administrators to manage buses, routes, and schedules while enabling customers to search for available buses and make bookings.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## Expanding the ESLint configuration
+## Features
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Admin Panel
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+- **Bus Management**: Create, update, and manage bus details (bus number, type, capacity, amenities)
+- **Route Management**: Define and manage routes with origin, destination, and intermediate stops
+- **Schedule Management**: Set up bus schedules with departure/arrival times and frequency
+- **Booking Management**: View and manage all customer bookings
+
+### Customer Interface
+
+- **Bus Search**: Search for available buses by route, date, and time
+- **Booking System**: Select seats and make reservations
+- **User Account**: Register, login, and manage personal bookings
+- **Payment Integration**: Secure payment processing for bookings
+
+---
+
+## Technologies Used
+
+- **Frontend**: HTML, CSS, TypeScript, React, TaliwindCss
+- **Backend**: Java, Spring Boot, Spring Security, NeonDB, Render
+- **Database**: MySQL, Postgres
+
+---
+
+## Installation
+
+### Setup Instructions
+
+```bash
+# Clone the repository
+git clone https://github.com/iammahesh123/booking-app-frontend.git
+
+# Navigate into the project directory
+cd booking-app-frontend
+
+# Install dependencies
+npm install
+
+# Configure database settings
+# Edit the following file
+[config file]
+
+# Start the application
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Usage
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
+### For Administrators
+
+1. Log in to the admin panel
+2. Navigate to the respective sections to manage:
+   - Buses
+   - Routes
+   - Schedules
+   - Bookings
+
+### For Customers
+
+1. Register or log in to your account
+2. Search for available buses
+3. Select your preferred bus and seats
+4. Complete the booking process
+5. Receive confirmation via email
+
+---
+
+## Contact
+
+For support or questions, please contact: maheshkadambala18@gmail.com
