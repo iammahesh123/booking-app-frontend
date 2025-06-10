@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.REACT_APP_API_BASE_URL || 'http://localhost:8080',
+  baseURL: import.meta.env.REACT_APP_API_BASE_URL || 'https://bus-booking-svc-latest.onrender.com',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',

@@ -1,28 +1,28 @@
 import { User, Bus, Route, Schedule, Seat, Booking, PopularRoute, BookingSummary } from '../../types';
 
-// export const mockUsers: User[] = [
-//   {
-//     id: "1",
-//     name: "John Doe",
-//     email: "customer@example.com",
-//     phone: "1234567890",
-//     role: "CUSTOMER",
-//   },
-//   {
-//     id: "2",
-//     name: "Agent Smith",
-//     email: "agent@example.com",
-//     phone: "9876543210",
-//     role: "agent",
-//   },
-//   {
-//     id: "3",
-//     name: "Admin User",
-//     email: "admin@example.com",
-//     phone: "5556667777",
-//     role: "ADMIN",
-//   }
-// ];
+export const mockUsers: User[] = [
+  {
+    id: "1",
+    name: "John Doe",
+    email: "customer@example.com",
+    phone: "1234567890",
+    role: "CUSTOMER",
+  },
+  {
+    id: "2",
+    name: "Agent Smith",
+    email: "agent@example.com",
+    phone: "9876543210",
+    role: "CUSTOMER",
+  },
+  {
+    id: "3",
+    name: "Admin User",
+    email: "admin@example.com",
+    phone: "5556667777",
+    role: "ADMIN",
+  }
+];
 
 export const mockBuses: Bus[] = [
   {

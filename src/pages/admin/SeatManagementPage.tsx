@@ -35,19 +35,19 @@ const SeatManagementPage: React.FC = () => {
         setLoading(prev => ({ ...prev, schedules: true, buses: true, routes: true }));
         
         // Fetch schedules
-        const schedulesResponse = await fetch('http://localhost:8080/bus-schedule');
+        const schedulesResponse = await fetch('https://bus-booking-svc-latest.onrender.com/bus-schedule');
         if (!schedulesResponse.ok) throw new Error('Failed to fetch schedules');
         const scheduleData = await schedulesResponse.json();
         setSchedules(scheduleData.data || []);
 
         // Fetch buses
-        const busesResponse = await fetch('http://localhost:8080/bus');
+        const busesResponse = await fetch('https://bus-booking-svc-latest.onrender.com/bus');
         if (!busesResponse.ok) throw new Error('Failed to fetch buses');
         const busData = await busesResponse.json();
         setBuses(busData.data || []);
 
         // Fetch routes
-        const routesResponse = await fetch('http://localhost:8080/bus-route');
+        const routesResponse = await fetch('https://bus-booking-svc-latest.onrender.com/bus-route');
         if (!routesResponse.ok) throw new Error('Failed to fetch routes');
         const routeData = await routesResponse.json();
         setRoutes(routeData.data || []);
@@ -70,7 +70,7 @@ const SeatManagementPage: React.FC = () => {
 
   const fetchSeats = async (scheduleId: number): Promise<Seat[]> => {
   try {
-    const response = await fetch(`http://localhost:8080/bus-seats/view-seats/${scheduleId}`);
+    const response = await fetch(`https://bus-booking-svc-latest.onrender.com/bus-seats/view-seats/${scheduleId}`);
     if (!response.ok) {
       throw new Error('Failed to fetch seats');
     }
