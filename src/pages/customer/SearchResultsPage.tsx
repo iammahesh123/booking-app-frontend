@@ -34,7 +34,7 @@ const SearchResultsPage: React.FC = () => {
 
   const fetchSeats = async (scheduleId: number): Promise<Seat[]> => {
   try {
-    const response = await fetch(`http://localhost:8080/bus-seats/view-seats/${scheduleId}`);
+    const response = await fetch(`https://bus-booking-svc-latest.onrender.com/bus-seats/view-seats/${scheduleId}`);
     if (!response.ok) {
       throw new Error('Failed to fetch seats');
     }

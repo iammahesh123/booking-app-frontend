@@ -3,10 +3,10 @@ import { Plus, Edit, Trash2, Search, UserPlus } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { User } from '../../types';
-// import { mockUsers } from '../../components/utils/MockData';
+import { mockUsers } from '../../components/utils/MockData';
 
 const UsersPage: React.FC = () => {
-  const [users, setUsers] = useState<User[]>();
+  const [users, setUsers] = useState<User[]>(mockUsers);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
