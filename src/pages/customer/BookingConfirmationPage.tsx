@@ -47,6 +47,27 @@ const BookingConfirmationPage: React.FC = () => {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
+
+    const formatDate = (dateString: string): string => {
+    const options: Intl.DateTimeFormatOptions = { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric',
+      timeZone: 'UTC' // Add this if your dates are in UTC
+    };
+    return new Date(dateString).toLocaleDateString('en-US', options);
+  };
+
+  const formatTime = (timeString: string): string => {
+    const options: Intl.DateTimeFormatOptions = { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: true,
+      timeZone: 'UTC' // Add this if your times are in UTC
+    };
+    return new Date(timeString).toLocaleTimeString('en-US', options);
+  };
+
   // Try to get booking details from location state first
   React.useEffect(() => {
     if (location.state?.bookingDetails) {

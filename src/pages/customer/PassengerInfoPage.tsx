@@ -52,6 +52,24 @@ const PassengerInfoPage: React.FC = () => {
     setPassengers(updatedPassengers);
   };
 
+  // if (!state?.selectedSeats) {
+  //   return (
+  //     <div className="min-h-screen flex items-center justify-center">
+  //       <div className="text-center">
+  //         <h2 className="text-2xl font-bold text-red-600">Invalid Access</h2>
+  //         <p className="mt-4">Please select seats before filling passenger information.</p>
+  //         <Button 
+  //           variant="primary" 
+  //           className="mt-6" 
+  //           onClick={() => navigate('/')}
+  //         >
+  //           Go Back Home
+  //         </Button>
+  //       </div>
+  //     </div>
+  //   );
+  // }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -70,6 +88,13 @@ const PassengerInfoPage: React.FC = () => {
         setIsSubmitting(false);
         return;
       }
+      
+      // const age = parseInt(passenger.age);
+      // if (isNaN(age) {
+      //   setError('Please enter a valid age');
+      //   setIsSubmitting(false);
+      //   return;
+      // }
     }
 
     try {
@@ -85,12 +110,12 @@ const PassengerInfoPage: React.FC = () => {
         };
 
         const response = await createPassenger(passengerData);
-        passengerIds.push(response.data.id); // Assuming the API returns the created passenger with an ID
+        passengerIds.push(response.id);
       }
 
       // Create booking
       const bookingData = {
-        userId: 'current-user-id', // You would get this from your auth context
+        userId: 'current-user-id', // TODO: Replace with actual user ID from auth context
         bookingDate: state.date,
         totalPrice: state.totalAmount,
         bookingStatus: "CONFIRMED",
@@ -103,23 +128,25 @@ const PassengerInfoPage: React.FC = () => {
       const bookingResponse = await createBooking(bookingData);
       
       // Navigate to confirmation page with booking details
-      navigate(`/booking/confirmation/${bookingResponse.data.id}`, {
+      navigate(`/booking/confirmation/${bookingResponse.id}`, {
         state: {
           bookingDetails: {
-            ...bookingResponse.data,
+            ...bookingResponse,
             passengers: passengers.map((p, i) => ({
               ...p,
-              seatNumber: state.selectedSeats[i].seatNumber
+              seatNumber: state.selectedSeats[i].seatNumber,
+              seatPrice: state.selectedSeats[i].seatPrice
             })),
             source: state.source,
             destination: state.destination,
-            date: state.date
+            date: state.date,
+            totalAmount: state.totalAmount
           }
         }
       });
     } catch (err) {
       console.error('Booking failed:', err);
-      setError('Failed to complete booking. Please try again.');
+      setError('Failed to complete booking. Please try again later.');
     } finally {
       setIsSubmitting(false);
     }
