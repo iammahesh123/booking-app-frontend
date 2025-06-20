@@ -17,7 +17,7 @@ export const busApi = {
   getAll: async (): Promise<Bus[]> => {
     try {
       const response = await api.get('/bus');
-      return response.data;
+      return response.data.data || [];
     } catch (error) {
       console.error('Error fetching buses:', error);
       throw error;
