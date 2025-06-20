@@ -36,7 +36,15 @@ export interface Route {
   
 }
 
-export interface Schedule {
+enum ScheduleDuration {
+  ONE_MONTH = 'ONE_MONTH',
+  TWO_MONTHS = 'TWO_MONTHS',
+  THREE_MONTHS = 'THREE_MONTHS',
+  FOUR_MONTHS = 'FOUR_MONTHS'
+}
+
+// Update your types.ts to include these new types
+export interface Schedule  {
   id: number;
   busId: number;
   routeId: number;
@@ -45,10 +53,14 @@ export interface Schedule {
   scheduleDate: string;
   totalSeats: number;
   farePrice: number;
-  bus?: Bus;
-  route?: Route;
-  seats?: Seat[]; // Optional, can be fetched separately
-}
+  automationDuration: ScheduleDuration;
+  seats?: Seat[];
+  isMasterRecord: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  updatedBy?: string;
+  createdBy?: string;
+};
 
 export interface ApiScheduleResponse {
   id: number;
@@ -57,6 +69,8 @@ export interface ApiScheduleResponse {
   scheduleDate: string;
   arrivalTime: string;
   departureTime: string;
+  automationDuration: ScheduleDuration;
+  isMasterRecord: boolean;
   totalSeats: number;
   farePrice: number;
   createdAt: string;

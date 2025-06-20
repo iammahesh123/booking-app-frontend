@@ -52,23 +52,23 @@ const PassengerInfoPage: React.FC = () => {
     setPassengers(updatedPassengers);
   };
 
-  // if (!state?.selectedSeats) {
-  //   return (
-  //     <div className="min-h-screen flex items-center justify-center">
-  //       <div className="text-center">
-  //         <h2 className="text-2xl font-bold text-red-600">Invalid Access</h2>
-  //         <p className="mt-4">Please select seats before filling passenger information.</p>
-  //         <Button 
-  //           variant="primary" 
-  //           className="mt-6" 
-  //           onClick={() => navigate('/')}
-  //         >
-  //           Go Back Home
-  //         </Button>
-  //       </div>
-  //     </div>
-  //   );
-  // }
+  if (!state?.selectedSeats) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-red-600">Invalid Access</h2>
+          <p className="mt-4">Please select seats before filling passenger information.</p>
+          <Button 
+            variant="primary" 
+            className="mt-6" 
+            onClick={() => navigate('/')}
+          >
+            Go Back Home
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

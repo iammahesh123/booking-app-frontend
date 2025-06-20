@@ -5,6 +5,15 @@ import Input from '../../components/ui/Input';
 import { Schedule, Bus, Route, ApiScheduleResponse, OrderBy } from '../../types';
 import api from '../../apiConfig/axios';
 
+
+
+enum ScheduleDuration {
+  ONE_MONTH = 'ONE_MONTH',
+  TWO_MONTHS = 'TWO_MONTHS',
+  THREE_MONTHS = 'THREE_MONTHS',
+  FOUR_MONTHS = 'FOUR_MONTHS'
+}
+
 const LoadingSpinner: React.FC<{ size?: 'small' | 'medium' | 'large' }> = ({ size = 'medium' }) => {
   const sizes = {
     small: 'h-5 w-5',
@@ -61,7 +70,13 @@ const mapApiResponseToSchedule = (apiResponse: ApiScheduleResponse): Schedule =>
     arrivalTime: apiResponse.arrivalTime,
     scheduleDate: apiResponse.scheduleDate,
     totalSeats: apiResponse.totalSeats,
-    farePrice: apiResponse.farePrice
+    farePrice: apiResponse.farePrice,
+    automationDuration: apiResponse.automationDuration,
+    isMasterRecord: apiResponse.isMasterRecord,
+    createdAt: apiResponse.createdAt,
+    updatedAt: apiResponse.updatedAt,
+    updatedBy: apiResponse.updatedBy,
+    createdBy: apiResponse.createdBy
   };
 };
 
@@ -84,7 +99,9 @@ const SchedulesPage: React.FC = () => {
     arrivalTime: '',
     scheduleDate: '',
     totalSeats: 0,
-    farePrice: 0
+    farePrice: 0,
+    automationDuration: ScheduleDuration.ONE_MONTH,
+    isMasterRecord: false
   });
 
   // Pagination and sorting
@@ -102,7 +119,7 @@ const SchedulesPage: React.FC = () => {
       const [schedulesRes, busesRes, routesRes] = await Promise.all([
         api.get('/bus-schedule', {
           params: {
-            pageNumber: currentPage - 1, // Convert to 0-based index for Spring
+            pageNumber: currentPage - 1, 
             pageSize: itemsPerPage,
             sortColumn: sortColumn,
             orderBY: orderBy
@@ -159,7 +176,7 @@ const SchedulesPage: React.FC = () => {
       setSortColumn(column);
       setOrderBy(OrderBy.ASC);
     }
-    setCurrentPage(1); // Reset to first page when sorting changes
+    setCurrentPage(1); 
   };
 
   const renderSortIndicator = (column: string) => {
@@ -192,15 +209,27 @@ const SchedulesPage: React.FC = () => {
   const handleAddSchedule = async () => {
     try {
       setLoading(true);
+      const scheduleData = {
+        busId: formData.busId,
+        routeId: formData.routeId,
+        departureTime: formData.departureTime,
+        arrivalTime: formData.arrivalTime,
+        scheduleDate: formData.scheduleDate,
+        totalSeats: formData.totalSeats,
+        farePrice: formData.farePrice,
+        automationDuration: formData.automationDuration,
+        isMasterRecord: formData.isMasterRecord
+      };
+
       if (selectedSchedule) {
         // Update existing schedule
-        const response = await api.put(`/bus-schedule/${selectedSchedule.id}`, formData);
+        const response = await api.put(`/bus-schedule/${selectedSchedule.id}`, scheduleData);
         setSchedules(schedules.map(s => 
           s.id === selectedSchedule.id ? mapApiResponseToSchedule(response.data) : s
         ));
       } else {
         // Create new schedule
-        const response = await api.post('/bus-schedule', formData);
+        const response = await api.post('/bus-schedule', scheduleData);
         setSchedules([...schedules, mapApiResponseToSchedule(response.data)]);
       }
       setShowAddModal(false);
@@ -239,7 +268,9 @@ const SchedulesPage: React.FC = () => {
       arrivalTime: '',
       scheduleDate: '',
       totalSeats: 0,
-      farePrice: 0
+      farePrice: 0,
+      automationDuration: ScheduleDuration.ONE_MONTH,
+      isMasterRecord: false
     });
     setSelectedSchedule(null);
   };
@@ -253,7 +284,9 @@ const SchedulesPage: React.FC = () => {
       arrivalTime: schedule.arrivalTime,
       scheduleDate: schedule.scheduleDate,
       totalSeats: schedule.totalSeats,
-      farePrice: schedule.farePrice
+      farePrice: schedule.farePrice,
+      automationDuration: schedule.automationDuration,
+      isMasterRecord: schedule.isMasterRecord
     });
     setShowAddModal(true);
   };
@@ -381,6 +414,16 @@ const SchedulesPage: React.FC = () => {
                         {renderSortIndicator('farePrice')}
                       </div>
                     </th>
+                    <th
+                      scope="col"
+                      className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 cursor-pointer"
+                      onClick={() => handleSort('automationDuration')}
+                    >
+                      <div className="flex items-center">
+                        Duration
+                        {renderSortIndicator('automationDuration')}
+                      </div>
+                    </th>
                     <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
                       <span className="sr-only">Actions</span>
                     </th>
@@ -389,7 +432,7 @@ const SchedulesPage: React.FC = () => {
                 <tbody className="divide-y divide-gray-200 bg-white">
                   {filteredSchedules.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="py-4 text-center text-sm text-gray-500">
+                      <td colSpan={7} className="py-4 text-center text-sm text-gray-500">
                         {searchTerm ? 'No matching schedules found' : 'No schedules available'}
                       </td>
                     </tr>
@@ -421,6 +464,9 @@ const SchedulesPage: React.FC = () => {
                           </td>
                           <td className="whitespace-nowrap px-3 py-4 text-sm font-medium text-gray-900">
                             ₹{schedule.farePrice.toLocaleString()}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                            {schedule.automationDuration}
                           </td>
                           <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
                             <div className="flex justify-end gap-2">
@@ -604,6 +650,37 @@ const SchedulesPage: React.FC = () => {
                 disabled={loading}
                 min="1"
               />
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Automation Duration</label>
+                <select
+                  value={formData.automationDuration}
+                  onChange={(e) => setFormData({ ...formData, automationDuration: e.target.value as ScheduleDuration })}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                  disabled={loading}
+                  required
+                >
+                  {Object.values(ScheduleDuration).map(duration => (
+                    <option key={duration} value={duration}>
+                      {duration.replace('_', ' ').toLowerCase()}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="isMasterRecord"
+                  checked={formData.isMasterRecord}
+                  onChange={(e) => setFormData({ ...formData, isMasterRecord: e.target.checked })}
+                  className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                  disabled={loading}
+                />
+                <label htmlFor="isMasterRecord" className="ml-2 block text-sm text-gray-700">
+                  Is Master Record
+                </label>
+              </div>
               
               <div className="flex justify-end gap-3 mt-6">
                 <Button

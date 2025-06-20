@@ -13,8 +13,9 @@ interface Passenger {
   seatNumber: string;
 }
 
+// Update the interface to match backend
 interface BookingDetails {
-  id: string;
+  id: number;
   bookingCode: string;
   bus: {
     name: string;
@@ -38,6 +39,8 @@ interface BookingDetails {
   status: 'CONFIRMED' | 'PENDING' | 'CANCELLED';
   createdAt: string;
 }
+
+
 
 const BookingConfirmationPage: React.FC = () => {
   const { bookingId } = useParams<{ bookingId: string }>();
@@ -82,18 +85,18 @@ const BookingConfirmationPage: React.FC = () => {
     }
   }, [bookingId, location.state]);
 
-  const fetchBookingDetails = async (id: string) => {
-    try {
-      setLoading(true);
-      const response = await getBookingDetails(id);
-      setBookingDetails(response.data);
-    } catch (err) {
-      console.error('Failed to fetch booking details:', err);
-      setError('Failed to load booking details. Please try again later.');
-    } finally {
-      setLoading(false);
-    }
-  };
+const fetchBookingDetails = async (id: string) => {
+  try {
+    setLoading(true);
+    const data = await getBookingDetails(id);
+    setBookingDetails(data);
+  } catch (err) {
+    console.error('Failed to fetch booking details:', err);
+    setError('Failed to load booking details. Please try again later.');
+  } finally {
+    setLoading(false);
+  }
+};
 
   if (loading) {
     return (
