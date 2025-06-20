@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { ApiScheduleResponse, Bus, OrderBy, Route, Schedule, ScheduleDuration, Seat, SeatStatus, SeatType } from '../types';
+import { ApiScheduleResponse, Bus, OrderBy, Route, Schedule, ScheduleDuration, Seat, SeatStatus, SeatType, User } from '../types';
 
 // const API_BASE_URL = 'https://bus-booking-svc-latest.onrender.com';
 const API_BASE_URL = 'http://localhost:8080';
@@ -654,7 +654,7 @@ export const authApi = {
         id: response.data.id,
         name: response.data.username,
         email: response.data.email,
-        role: response.data.role.toLowerCase() as 'admin' | 'user',
+        role: response.data.role.toLowerCase() as 'ADMIN' | 'CUSTOMER',
         phone: response.data.phoneNumber,
       };
     } catch (error) {
