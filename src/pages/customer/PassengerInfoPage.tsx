@@ -5,7 +5,7 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/layout/Footer';
-import { createPassenger, createBooking } from '../../apiConfig/Booking';
+import { BookingStatus, createBooking, createPassenger, PaymentStatus } from '../../apiConfig/Bus';
 
 interface Passenger {
   name: string;
@@ -88,13 +88,6 @@ const PassengerInfoPage: React.FC = () => {
         setIsSubmitting(false);
         return;
       }
-      
-      // const age = parseInt(passenger.age);
-      // if (isNaN(age) {
-      //   setError('Please enter a valid age');
-      //   setIsSubmitting(false);
-      //   return;
-      // }
     }
 
     try {
@@ -115,11 +108,11 @@ const PassengerInfoPage: React.FC = () => {
 
       // Create booking
       const bookingData = {
-        userId: 'current-user-id', // TODO: Replace with actual user ID from auth context
+        userId: 'current-user-id', 
         bookingDate: state.date,
         totalPrice: state.totalAmount,
-        bookingStatus: "CONFIRMED",
-        paymentStatus: 'PAID',
+        bookingStatus: BookingStatus.CONFIRMED,
+        paymentStatus: PaymentStatus.PENDING,
         seatIds: state.selectedSeats.map(seat => seat.id),
         passengerIds: passengerIds,
         busScheduleId: parseInt(scheduleId || '0')

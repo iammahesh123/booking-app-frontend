@@ -5,7 +5,8 @@ import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/layout/Footer';
 import SeatLayout from '../../components/booking/SeatLayout';
 import { Seat, Schedule, Bus, Route } from '../../types';
-import { mockSchedules, mockRoutes, mockBuses } from '../../components/utils/MockData';
+import {  mockRoutes, mockBuses } from '../../components/utils/MockData';
+import { fetchSchedules } from '../../apiConfig/Bus';
 
 const BookingPage: React.FC = () => {
   const { scheduleId } = useParams<{ scheduleId: string }>();
@@ -28,29 +29,39 @@ const BookingPage: React.FC = () => {
     
     // Simulate API delay
     const timer = setTimeout(() => {
-      if (scheduleId) {
-        const foundSchedule = mockSchedules.find(s => s.id);
-        setSchedule(foundSchedule || null);
-        
-        if (foundSchedule) {
-          const foundBus = mockBuses.find(b => b.id);
-          setBus(foundBus || null);
-          
-          const foundRoute = mockRoutes.find(r => r.id === foundSchedule.routeId);
-          if (!foundRoute) {
-            setError('Route information not found for this schedule.');
+      const fetchData = async () => {
+        if (scheduleId) {
+          try {
+            // Provide appropriate arguments for fetchSchedules, e.g. source, destination, date
+            // Replace '' with actual values as needed
+            const schedules = await fetchSchedules('', '', '');
+            const foundSchedule = schedules.find(s => s.id === Number(scheduleId));
+            setSchedule(foundSchedule || null);
+
+            if (foundSchedule) {
+              const foundBus = mockBuses.find(b => b.id === foundSchedule.busId);
+              setBus(foundBus || null);
+
+              const foundRoute = mockRoutes.find(r => r.id === foundSchedule.routeId);
+              if (!foundRoute) {
+                setError('Route information not found for this schedule.');
+              }
+              setRoute(foundRoute || null);
+
+              // Generate seats for this schedule
+              // const generatedSeats = generateSeats(scheduleId);
+              // setSeats(generatedSeats);
+            } else {
+              setError('Schedule not found.');
+            }
+          } catch (err) {
+            console.error('Error fetching schedule:', err);
+            setError('Failed to load schedule details. Please try again later.');
           }
-          setRoute(foundRoute || null);
-          
-          // Generate seats for this schedule
-          // const generatedSeats = generateSeats(scheduleId);
-          // setSeats(generatedSeats);
-        } else {
-          setError('Schedule not found.');
         }
-      }
-      
-      setIsLoading(false);
+        setIsLoading(false);
+      };
+      fetchData();
     }, 1000);
     
     return () => clearTimeout(timer);

@@ -4,7 +4,7 @@ import { Check, Download, Bus, MapPin, Calendar, Clock, Users, ArrowLeft } from 
 import Button from '../../components/ui/Button';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/layout/Footer';
-import { getBookingDetails } from '../../apiConfig/Booking';
+import { getBookingDetails } from '../../apiConfig/Bus';
 
 interface Passenger {
   name: string;
@@ -13,7 +13,6 @@ interface Passenger {
   seatNumber: string;
 }
 
-// Update the interface to match backend
 interface BookingDetails {
   id: number;
   bookingCode: string;
@@ -56,7 +55,7 @@ const BookingConfirmationPage: React.FC = () => {
       year: 'numeric', 
       month: 'long', 
       day: 'numeric',
-      timeZone: 'UTC' // Add this if your dates are in UTC
+      timeZone: 'UTC' 
     };
     return new Date(dateString).toLocaleDateString('en-US', options);
   };
@@ -66,18 +65,16 @@ const BookingConfirmationPage: React.FC = () => {
       hour: '2-digit', 
       minute: '2-digit',
       hour12: true,
-      timeZone: 'UTC' // Add this if your times are in UTC
+      timeZone: 'UTC' 
     };
     return new Date(timeString).toLocaleTimeString('en-US', options);
   };
 
-  // Try to get booking details from location state first
   React.useEffect(() => {
     if (location.state?.bookingDetails) {
       setBookingDetails(location.state.bookingDetails);
       setLoading(false);
     } else if (bookingId) {
-      // If not in state, fetch from API
       fetchBookingDetails(bookingId);
     } else {
       setError('No booking information available');

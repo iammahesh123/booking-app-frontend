@@ -180,68 +180,68 @@ export const mockRoutes: Route[] = [
   }
 ];
 
-export const mockSchedules: Schedule[] = [
-  {
-    id:1,
-    busId: 1,
-    routeId: 1,
-    departureTime: "21:00",
-    arrivalTime: "15:30",
-    scheduleDate: "2025-01-15",
-    totalSeats: 28,
-    farePrice: 1800,
-  },
-  {
-    id: 2,
-    busId: 2,
-    routeId: 2,
-    departureTime: "22:30",
-    arrivalTime: "06:45",
-    scheduleDate: "2025-01-15",
-    totalSeats: 18,
-    farePrice: 1200,
-  },
-  {
-    id: 3,
-    busId: 3,
-    routeId: 3,
-    departureTime: "08:15",
-    arrivalTime: "14:45",
-    scheduleDate: "2025-01-15",
-    totalSeats: 32,
-    farePrice: 850,
-  },
-  {
-    id: 4,
-    busId: 4,
-    routeId: 4,
-    departureTime: "10:00",
-    arrivalTime: "13:45",
-    scheduleDate: "2025-01-15",
-    totalSeats: 25,
-    farePrice: 450,
-  },
-  {
-    id: 5,
-    busId: 5,
-    routeId: 5,
-    departureTime: "07:30",
-    arrivalTime: "12:45",
-    scheduleDate: "2025-01-15",
-    totalSeats: 22,
-    farePrice: 650,
-  },
-  {
-    id: 6,
-    busId: 1,
-    routeId: 1,
-    departureTime: "18:00",
-    arrivalTime: "12:30",
-    scheduleDate: "2025-01-15",
-    totalSeats: 35,
-    farePrice: 1750,
-  }
-];
+// export const mockSchedules: Schedule[] = [
+//   {
+//     id:1,
+//     busId: 1,
+//     routeId: 1,
+//     departureTime: "21:00",
+//     arrivalTime: "15:30",
+//     scheduleDate: "2025-01-15",
+//     totalSeats: 28,
+//     farePrice: 1800,
+//   },
+//   {
+//     id: 2,
+//     busId: 2,
+//     routeId: 2,
+//     departureTime: "22:30",c
+//     arrivalTime: "06:45",
+//     scheduleDate: "2025-01-15",
+//     totalSeats: 18,
+//     farePrice: 1200,
+//   },
+//   {
+//     id: 3,
+//     busId: 3,
+//     routeId: 3,
+//     departureTime: "08:15",
+//     arrivalTime: "14:45",
+//     scheduleDate: "2025-01-15",
+//     totalSeats: 32,
+//     farePrice: 850,
+//   },
+//   {
+//     id: 4,
+//     busId: 4,
+//     routeId: 4,
+//     departureTime: "10:00",
+//     arrivalTime: "13:45",
+//     scheduleDate: "2025-01-15",
+//     totalSeats: 25,
+//     farePrice: 450,
+//   },
+//   {
+//     id: 5,
+//     busId: 5,
+//     routeId: 5,
+//     departureTime: "07:30",
+//     arrivalTime: "12:45",
+//     scheduleDate: "2025-01-15",
+//     totalSeats: 22,
+//     farePrice: 650,
+//   },
+//   {
+//     id: 6,
+//     busId: 1,
+//     routeId: 1,
+//     departureTime: "18:00",
+//     arrivalTime: "12:30",
+//     scheduleDate: "2025-01-15",
+//     totalSeats: 35,
+//     farePrice: 1750,
+//   }
+// ];
 
 // export const generateSeats = (scheduleId: number): Seat[] => {
 //   const seats: Seat[] = [];

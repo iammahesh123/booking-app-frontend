@@ -4,12 +4,7 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import { Seat, Schedule, Bus as BusType, Route } from '../../types';
-
-interface SeatResponse {
-  data: Seat[];
-  success: boolean;
-  message?: string;
-}
+import { fetchAllBuses, fetchAllRoutes, fetchAllSchedules, fetchSeats} from '../../apiConfig/Bus';
 
 const SeatManagementPage: React.FC = () => {
   const [selectedSchedule, setSelectedSchedule] = useState<number | null>(null);
@@ -34,23 +29,16 @@ const SeatManagementPage: React.FC = () => {
       try {
         setLoading(prev => ({ ...prev, schedules: true, buses: true, routes: true }));
         
-        // Fetch schedules
-        const schedulesResponse = await fetch('https://bus-booking-svc-latest.onrender.com/bus-schedule');
-        if (!schedulesResponse.ok) throw new Error('Failed to fetch schedules');
-        const scheduleData = await schedulesResponse.json();
-        setSchedules(scheduleData.data || []);
+        // Fetch data using the imported API functions
+        const [scheduleData, busData, routeData] = await Promise.all([
+          fetchAllSchedules(),
+          fetchAllBuses(),
+          fetchAllRoutes()
+        ]);
 
-        // Fetch buses
-        const busesResponse = await fetch('https://bus-booking-svc-latest.onrender.com/bus');
-        if (!busesResponse.ok) throw new Error('Failed to fetch buses');
-        const busData = await busesResponse.json();
-        setBuses(busData.data || []);
-
-        // Fetch routes
-        const routesResponse = await fetch('https://bus-booking-svc-latest.onrender.com/bus-route');
-        if (!routesResponse.ok) throw new Error('Failed to fetch routes');
-        const routeData = await routesResponse.json();
-        setRoutes(routeData.data || []);
+        setSchedules(scheduleData);
+        setBuses(busData);
+        setRoutes(routeData);
 
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -68,19 +56,6 @@ const SeatManagementPage: React.FC = () => {
     fetchInitialData();
   }, []);
 
-  const fetchSeats = async (scheduleId: number): Promise<Seat[]> => {
-  try {
-    const response = await fetch(`https://bus-booking-svc-latest.onrender.com/bus-seats/view-seats/${scheduleId}`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch seats');
-    }
-  
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching seats:', error);
-    return [];
-  }
-};
 
   const handleScheduleSelect = async (scheduleId: number) => {
     try {

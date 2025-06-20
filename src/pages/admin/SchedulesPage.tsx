@@ -3,7 +3,7 @@ import { Plus, Edit, Trash2, Search, ChevronLeft, ChevronRight, ArrowUp, ArrowDo
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { Schedule, Bus, Route, ApiScheduleResponse, OrderBy } from '../../types';
-import api from '../../apiConfig/axios';
+import { busApi, routeApi, scheduleApi } from '../../apiConfig/Bus';
 
 
 
@@ -90,7 +90,7 @@ const SchedulesPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
-  
+
   // Form state
   const [formData, setFormData] = useState({
     busId: 0,
@@ -113,43 +113,37 @@ const SchedulesPage: React.FC = () => {
   const [orderBy, setOrderBy] = useState<OrderBy>(OrderBy.ASC);
 
   // Fetch data from API
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [schedulesRes, busesRes, routesRes] = await Promise.all([
-        api.get('/bus-schedule', {
-          params: {
-            pageNumber: currentPage - 1, 
-            pageSize: itemsPerPage,
-            sortColumn: sortColumn,
-            orderBY: orderBy
-          }
-        }),
-        api.get('/bus'),
-        api.get('/bus-route')
-      ]);
-      
-      const mappedSchedules = schedulesRes.data.data.map((apiSchedule: ApiScheduleResponse) => 
-        mapApiResponseToSchedule(apiSchedule)
-      );
-      
-      setSchedules(mappedSchedules);
-      setBuses(busesRes.data.data);
-      setRoutes(routesRes.data.data);
-      setTotalPages(schedulesRes.data.totalPages);
-      setTotalRecords(schedulesRes.data.totalRecords);
-      setError(null);
-    } catch (err) {
-      setError('Failed to fetch data. Please try again later.');
-      console.error('Error fetching data:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+const fetchData = async () => {
+  try {
+    setLoading(true);
+    const [schedulesRes, busesRes, routesRes] = await Promise.all([
+      scheduleApi.getSchedules({
+        pageNumber: currentPage - 1,
+        pageSize: itemsPerPage,
+        sortColumn: sortColumn,
+        orderBY: orderBy
+      }),
+      busApi.getAll(),
+      routeApi.getAllRoutes()
+    ]);
 
-  useEffect(() => {
-    fetchData();
-  }, [currentPage, itemsPerPage, sortColumn, orderBy]);
+    const mappedSchedules = schedulesRes.data.data.map((apiSchedule: ApiScheduleResponse) =>
+      mapApiResponseToSchedule(apiSchedule)
+    );
+
+    setSchedules(mappedSchedules);
+    setBuses(busesRes.data.data);
+    setRoutes(routesRes.data.data);
+    setTotalPages(schedulesRes.data.totalPages);
+    setTotalRecords(schedulesRes.data.totalRecords);
+    setError(null);
+  } catch (err) {
+    setError('Failed to fetch data. Please try again later.');
+    console.error('Error fetching data:', err);
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Helper functions
   const getBusDetails = (busId: number): Bus | undefined => {
@@ -176,7 +170,7 @@ const SchedulesPage: React.FC = () => {
       setSortColumn(column);
       setOrderBy(OrderBy.ASC);
     }
-    setCurrentPage(1); 
+    setCurrentPage(1);
   };
 
   const renderSortIndicator = (column: string) => {
@@ -206,58 +200,60 @@ const SchedulesPage: React.FC = () => {
   };
 
   // CRUD operations
-  const handleAddSchedule = async () => {
-    try {
-      setLoading(true);
-      const scheduleData = {
-        busId: formData.busId,
-        routeId: formData.routeId,
-        departureTime: formData.departureTime,
-        arrivalTime: formData.arrivalTime,
-        scheduleDate: formData.scheduleDate,
-        totalSeats: formData.totalSeats,
-        farePrice: formData.farePrice,
-        automationDuration: formData.automationDuration,
-        isMasterRecord: formData.isMasterRecord
-      };
+const handleAddSchedule = async () => {
+  try {
+    setLoading(true);
+    const scheduleData = {
+      busId: formData.busId,
+      routeId: formData.routeId,
+      departureTime: formData.departureTime,
+      arrivalTime: formData.arrivalTime,
+      scheduleDate: formData.scheduleDate,
+      totalSeats: formData.totalSeats,
+      farePrice: formData.farePrice,
+      automationDuration: formData.automationDuration,
+      isMasterRecord: formData.isMasterRecord
+    };
 
-      if (selectedSchedule) {
-        // Update existing schedule
-        const response = await api.put(`/bus-schedule/${selectedSchedule.id}`, scheduleData);
-        setSchedules(schedules.map(s => 
-          s.id === selectedSchedule.id ? mapApiResponseToSchedule(response.data) : s
-        ));
-      } else {
-        // Create new schedule
-        const response = await api.post('/bus-schedule', scheduleData);
-        setSchedules([...schedules, mapApiResponseToSchedule(response.data)]);
-      }
-      setShowAddModal(false);
-      resetForm();
-      setError(null);
-      fetchData(); // Refresh data
-    } catch (err) {
-      setError('Failed to save schedule. Please try again.');
-      console.error('Error saving schedule:', err);
-    } finally {
-      setLoading(false);
+    let response;
+    if (selectedSchedule) {
+      // Update existing schedule
+      response = await scheduleApi.updateSchedule(selectedSchedule.id, scheduleData);
+      setSchedules(schedules.map(s =>
+        s.id === selectedSchedule.id ? mapApiResponseToSchedule(response.data) : s
+      ));
+    } else {
+      // Create new schedule
+      response = await scheduleApi.createSchedule(scheduleData);
+      setSchedules([...schedules, mapApiResponseToSchedule(response.data)]);
     }
-  };
+    setShowAddModal(false);
+    resetForm();
+    setError(null);
+    fetchData();
+  } catch (err) {
+    setError('Failed to save schedule. Please try again.');
+    console.error('Error saving schedule:', err);
+  } finally {
+    setLoading(false);
+  }
+};
 
-  const handleDeleteSchedule = async (scheduleId: number) => {
-    try {
-      setLoading(true);
-      await api.delete(`/bus-schedule/${scheduleId}`);
-      setSchedules(schedules.filter(schedule => schedule.id !== scheduleId));
-      setError(null);
-      fetchData(); // Refresh data
-    } catch (err) {
-      setError('Failed to delete schedule. Please try again.');
-      console.error('Error deleting schedule:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+
+const handleDeleteSchedule = async (scheduleId: number) => {
+  try {
+    setLoading(true);
+    await scheduleApi.deleteSchedule(scheduleId);
+    setSchedules(schedules.filter(schedule => schedule.id !== scheduleId));
+    setError(null);
+    fetchData();
+  } catch (err) {
+    setError('Failed to delete schedule. Please try again.');
+    console.error('Error deleting schedule:', err);
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Form helpers
   const resetForm = () => {
@@ -440,7 +436,7 @@ const SchedulesPage: React.FC = () => {
                     filteredSchedules.map((schedule) => {
                       const bus = getBusDetails(schedule.busId);
                       const route = getRouteDetails(schedule.routeId);
-                      
+
                       return (
                         <tr key={schedule.id}>
                           <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm">
@@ -503,7 +499,7 @@ const SchedulesPage: React.FC = () => {
           Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
           {Math.min(currentPage * itemsPerPage, totalRecords)} of {totalRecords} entries
         </div>
-        
+
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
@@ -514,7 +510,7 @@ const SchedulesPage: React.FC = () => {
           >
             Previous
           </Button>
-          
+
           {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
             let pageNum;
             if (totalPages <= 5) {
@@ -540,7 +536,7 @@ const SchedulesPage: React.FC = () => {
               </Button>
             );
           })}
-          
+
           <Button
             variant="outline"
             onClick={goToNextPage}
@@ -578,7 +574,7 @@ const SchedulesPage: React.FC = () => {
                   ))}
                 </select>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700">Route</label>
                 <select
@@ -596,7 +592,7 @@ const SchedulesPage: React.FC = () => {
                   ))}
                 </select>
               </div>
-              
+
               <Input
                 label="Date"
                 type="date"
@@ -606,7 +602,7 @@ const SchedulesPage: React.FC = () => {
                 fullWidth
                 disabled={loading}
               />
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <Input
                   label="Departure Time"
@@ -617,7 +613,7 @@ const SchedulesPage: React.FC = () => {
                   fullWidth
                   disabled={loading}
                 />
-                
+
                 <Input
                   label="Arrival Time"
                   type="time"
@@ -628,7 +624,7 @@ const SchedulesPage: React.FC = () => {
                   disabled={loading}
                 />
               </div>
-              
+
               <Input
                 label="Available Seats"
                 type="number"
@@ -639,7 +635,7 @@ const SchedulesPage: React.FC = () => {
                 disabled={loading}
                 min="1"
               />
-              
+
               <Input
                 label="Fare (₹)"
                 type="number"
@@ -650,7 +646,7 @@ const SchedulesPage: React.FC = () => {
                 disabled={loading}
                 min="1"
               />
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700">Automation Duration</label>
                 <select
@@ -667,7 +663,7 @@ const SchedulesPage: React.FC = () => {
                   ))}
                 </select>
               </div>
-              
+
               <div className="flex items-center">
                 <input
                   type="checkbox"
@@ -681,7 +677,7 @@ const SchedulesPage: React.FC = () => {
                   Is Master Record
                 </label>
               </div>
-              
+
               <div className="flex justify-end gap-3 mt-6">
                 <Button
                   variant="outline"
