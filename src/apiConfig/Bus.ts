@@ -14,7 +14,7 @@ const api = axios.create({
 export const busApi = {
 
   // Get all buses
-  getAll: async () => {
+  getAll: async (): Promise<Bus[]> => {
     try {
       const response = await api.get('/bus');
       return response.data;
