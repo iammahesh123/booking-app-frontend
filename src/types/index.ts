@@ -3,7 +3,7 @@ export interface User {
   name: string;
   email: string;
   phone?: string;
-  role: 'CUSTOMER' |  'ADMIN';
+  role: 'CUSTOMER' | 'ADMIN';
   profilePicture?: string;
 }
 
@@ -30,12 +30,20 @@ export interface Route {
   sourceCity: string;
   destinationCity: string;
   totalDistance: number;
-  totalDuration: string; 
-  stopIds?: number[]; 
+  totalDuration: string;
+  stopIds?: number[];
   stops?: Stop[];
-  
+
 }
 
+export enum ScheduleDuration {
+  ONE_MONTH = 'ONE_MONTH',
+  TWO_MONTHS = 'TWO_MONTHS',
+  THREE_MONTHS = 'THREE_MONTHS',
+  FOUR_MONTHS = 'FOUR_MONTHS'
+}
+
+// Update your types.ts to include these new types
 export interface Schedule {
   id: number;
   busId: number;
@@ -45,10 +53,14 @@ export interface Schedule {
   scheduleDate: string;
   totalSeats: number;
   farePrice: number;
-  bus?: Bus;
-  route?: Route;
-  seats?: Seat[]; // Optional, can be fetched separately
-}
+  automationDuration: ScheduleDuration;
+  seats?: Seat[];
+  isMasterRecord: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  updatedBy?: string;
+  createdBy?: string;
+};
 
 export interface ApiScheduleResponse {
   id: number;
@@ -57,6 +69,8 @@ export interface ApiScheduleResponse {
   scheduleDate: string;
   arrivalTime: string;
   departureTime: string;
+  automationDuration: ScheduleDuration;
+  isMasterRecord: boolean;
   totalSeats: number;
   farePrice: number;
   createdAt: string;
@@ -65,12 +79,32 @@ export interface ApiScheduleResponse {
   createdBy: string;
 }
 
+export enum SeatType {
+  WINDOW = 'WINDOW',
+  AISLE = 'AISLE',
+  MIDDLE = 'MIDDLE',
+  SLEEPER = 'SLEEPER'
+}
+
+export enum SeatStatus {
+  AVAILABLE = 'AVAILABLE',
+  BOOKED = 'BOOKED',
+  BLOCKED = 'BLOCKED',
+  SELECTED = 'SELECTED',
+  UNAVAILABLE = 'UNAVAILABLE'
+}
+
 export interface Seat {
   id: number;
   seatNumber: string;
-  seatType: 'window' | 'aisle' | 'middle' | 'sleeper';
-  seatStatus: 'AVAILABLE' | 'BOOKED' | 'SELECTED' | 'UNAVAILABLE';
+  seatType: SeatType;
+  seatStatus: SeatStatus;
   seatPrice: number;
+  scheduleId: number;
+  createdAt?: string;
+  updatedAt?: string;
+  updatedBy?: string;
+  createdBy?: string;
 }
 
 export enum OrderBy {

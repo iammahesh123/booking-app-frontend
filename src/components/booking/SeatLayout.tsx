@@ -121,8 +121,16 @@ const SeatLayout: React.FC<SeatLayoutProps> = ({
       return;
     }
 
-    navigate(`/booking/${scheduleId}/passengers?date=${date}&source=${sourceStop}&destination=${destinationStop}`);
-  };
+   navigate(`/booking/${scheduleId}/passengers`, {
+    state: {
+      selectedSeats,
+      date,
+      source: sourceStop,
+      destination: destinationStop,
+      totalAmount: finalTotalAmount
+    }
+  });
+};
 
   const totalAmount = selectedSeats.reduce((sum, seat) => sum + seat.seatPrice, 0);
   const serviceFee = 50;

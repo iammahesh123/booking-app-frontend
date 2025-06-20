@@ -3,7 +3,16 @@ import { Plus, Edit, Trash2, Search, ChevronLeft, ChevronRight, ArrowUp, ArrowDo
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { Schedule, Bus, Route, ApiScheduleResponse, OrderBy } from '../../types';
-import api from '../../apiConfig/axios';
+import { busApi, routeApi, scheduleApi } from '../../apiConfig/Bus';
+
+
+
+enum ScheduleDuration {
+  ONE_MONTH = 'ONE_MONTH',
+  TWO_MONTHS = 'TWO_MONTHS',
+  THREE_MONTHS = 'THREE_MONTHS',
+  FOUR_MONTHS = 'FOUR_MONTHS'
+}
 
 const LoadingSpinner: React.FC<{ size?: 'small' | 'medium' | 'large' }> = ({ size = 'medium' }) => {
   const sizes = {
@@ -61,7 +70,13 @@ const mapApiResponseToSchedule = (apiResponse: ApiScheduleResponse): Schedule =>
     arrivalTime: apiResponse.arrivalTime,
     scheduleDate: apiResponse.scheduleDate,
     totalSeats: apiResponse.totalSeats,
-    farePrice: apiResponse.farePrice
+    farePrice: apiResponse.farePrice,
+    automationDuration: apiResponse.automationDuration,
+    isMasterRecord: apiResponse.isMasterRecord,
+    createdAt: apiResponse.createdAt,
+    updatedAt: apiResponse.updatedAt,
+    updatedBy: apiResponse.updatedBy,
+    createdBy: apiResponse.createdBy
   };
 };
 
@@ -75,7 +90,7 @@ const SchedulesPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
-  
+
   // Form state
   const [formData, setFormData] = useState({
     busId: 0,
@@ -84,7 +99,9 @@ const SchedulesPage: React.FC = () => {
     arrivalTime: '',
     scheduleDate: '',
     totalSeats: 0,
-    farePrice: 0
+    farePrice: 0,
+    automationDuration: ScheduleDuration.ONE_MONTH,
+    isMasterRecord: false
   });
 
   // Pagination and sorting
@@ -96,43 +113,37 @@ const SchedulesPage: React.FC = () => {
   const [orderBy, setOrderBy] = useState<OrderBy>(OrderBy.ASC);
 
   // Fetch data from API
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [schedulesRes, busesRes, routesRes] = await Promise.all([
-        api.get('/bus-schedule', {
-          params: {
-            pageNumber: currentPage - 1, // Convert to 0-based index for Spring
-            pageSize: itemsPerPage,
-            sortColumn: sortColumn,
-            orderBY: orderBy
-          }
-        }),
-        api.get('/bus'),
-        api.get('/bus-route')
-      ]);
-      
-      const mappedSchedules = schedulesRes.data.data.map((apiSchedule: ApiScheduleResponse) => 
-        mapApiResponseToSchedule(apiSchedule)
-      );
-      
-      setSchedules(mappedSchedules);
-      setBuses(busesRes.data.data);
-      setRoutes(routesRes.data.data);
-      setTotalPages(schedulesRes.data.totalPages);
-      setTotalRecords(schedulesRes.data.totalRecords);
-      setError(null);
-    } catch (err) {
-      setError('Failed to fetch data. Please try again later.');
-      console.error('Error fetching data:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+const fetchData = async () => {
+  try {
+    setLoading(true);
+    const [schedulesRes, busesRes, routesRes] = await Promise.all([
+      scheduleApi.getSchedules({
+        pageNumber: currentPage - 1,
+        pageSize: itemsPerPage,
+        sortColumn: sortColumn,
+        orderBY: orderBy
+      }),
+      busApi.getAll(),
+      routeApi.getAllRoutes()
+    ]);
 
-  useEffect(() => {
-    fetchData();
-  }, [currentPage, itemsPerPage, sortColumn, orderBy]);
+    const mappedSchedules = schedulesRes.data.data.map((apiSchedule: ApiScheduleResponse) =>
+      mapApiResponseToSchedule(apiSchedule)
+    );
+
+    setSchedules(mappedSchedules);
+    setBuses(busesRes.data.data);
+    setRoutes(routesRes.data.data);
+    setTotalPages(schedulesRes.data.totalPages);
+    setTotalRecords(schedulesRes.data.totalRecords);
+    setError(null);
+  } catch (err) {
+    setError('Failed to fetch data. Please try again later.');
+    console.error('Error fetching data:', err);
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Helper functions
   const getBusDetails = (busId: number): Bus | undefined => {
@@ -159,7 +170,7 @@ const SchedulesPage: React.FC = () => {
       setSortColumn(column);
       setOrderBy(OrderBy.ASC);
     }
-    setCurrentPage(1); // Reset to first page when sorting changes
+    setCurrentPage(1);
   };
 
   const renderSortIndicator = (column: string) => {
@@ -189,46 +200,60 @@ const SchedulesPage: React.FC = () => {
   };
 
   // CRUD operations
-  const handleAddSchedule = async () => {
-    try {
-      setLoading(true);
-      if (selectedSchedule) {
-        // Update existing schedule
-        const response = await api.put(`/bus-schedule/${selectedSchedule.id}`, formData);
-        setSchedules(schedules.map(s => 
-          s.id === selectedSchedule.id ? mapApiResponseToSchedule(response.data) : s
-        ));
-      } else {
-        // Create new schedule
-        const response = await api.post('/bus-schedule', formData);
-        setSchedules([...schedules, mapApiResponseToSchedule(response.data)]);
-      }
-      setShowAddModal(false);
-      resetForm();
-      setError(null);
-      fetchData(); // Refresh data
-    } catch (err) {
-      setError('Failed to save schedule. Please try again.');
-      console.error('Error saving schedule:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+const handleAddSchedule = async () => {
+  try {
+    setLoading(true);
+    const scheduleData = {
+      busId: formData.busId,
+      routeId: formData.routeId,
+      departureTime: formData.departureTime,
+      arrivalTime: formData.arrivalTime,
+      scheduleDate: formData.scheduleDate,
+      totalSeats: formData.totalSeats,
+      farePrice: formData.farePrice,
+      automationDuration: formData.automationDuration,
+      isMasterRecord: formData.isMasterRecord
+    };
 
-  const handleDeleteSchedule = async (scheduleId: number) => {
-    try {
-      setLoading(true);
-      await api.delete(`/bus-schedule/${scheduleId}`);
-      setSchedules(schedules.filter(schedule => schedule.id !== scheduleId));
-      setError(null);
-      fetchData(); // Refresh data
-    } catch (err) {
-      setError('Failed to delete schedule. Please try again.');
-      console.error('Error deleting schedule:', err);
-    } finally {
-      setLoading(false);
+    let response;
+    if (selectedSchedule) {
+      // Update existing schedule
+      response = await scheduleApi.updateSchedule(selectedSchedule.id, scheduleData);
+      setSchedules(schedules.map(s =>
+        s.id === selectedSchedule.id ? mapApiResponseToSchedule(response.data) : s
+      ));
+    } else {
+      // Create new schedule
+      response = await scheduleApi.createSchedule(scheduleData);
+      setSchedules([...schedules, mapApiResponseToSchedule(response.data)]);
     }
-  };
+    setShowAddModal(false);
+    resetForm();
+    setError(null);
+    fetchData();
+  } catch (err) {
+    setError('Failed to save schedule. Please try again.');
+    console.error('Error saving schedule:', err);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+const handleDeleteSchedule = async (scheduleId: number) => {
+  try {
+    setLoading(true);
+    await scheduleApi.deleteSchedule(scheduleId);
+    setSchedules(schedules.filter(schedule => schedule.id !== scheduleId));
+    setError(null);
+    fetchData();
+  } catch (err) {
+    setError('Failed to delete schedule. Please try again.');
+    console.error('Error deleting schedule:', err);
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Form helpers
   const resetForm = () => {
@@ -239,7 +264,9 @@ const SchedulesPage: React.FC = () => {
       arrivalTime: '',
       scheduleDate: '',
       totalSeats: 0,
-      farePrice: 0
+      farePrice: 0,
+      automationDuration: ScheduleDuration.ONE_MONTH,
+      isMasterRecord: false
     });
     setSelectedSchedule(null);
   };
@@ -253,7 +280,9 @@ const SchedulesPage: React.FC = () => {
       arrivalTime: schedule.arrivalTime,
       scheduleDate: schedule.scheduleDate,
       totalSeats: schedule.totalSeats,
-      farePrice: schedule.farePrice
+      farePrice: schedule.farePrice,
+      automationDuration: schedule.automationDuration,
+      isMasterRecord: schedule.isMasterRecord
     });
     setShowAddModal(true);
   };
@@ -381,6 +410,16 @@ const SchedulesPage: React.FC = () => {
                         {renderSortIndicator('farePrice')}
                       </div>
                     </th>
+                    <th
+                      scope="col"
+                      className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 cursor-pointer"
+                      onClick={() => handleSort('automationDuration')}
+                    >
+                      <div className="flex items-center">
+                        Duration
+                        {renderSortIndicator('automationDuration')}
+                      </div>
+                    </th>
                     <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
                       <span className="sr-only">Actions</span>
                     </th>
@@ -389,7 +428,7 @@ const SchedulesPage: React.FC = () => {
                 <tbody className="divide-y divide-gray-200 bg-white">
                   {filteredSchedules.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="py-4 text-center text-sm text-gray-500">
+                      <td colSpan={7} className="py-4 text-center text-sm text-gray-500">
                         {searchTerm ? 'No matching schedules found' : 'No schedules available'}
                       </td>
                     </tr>
@@ -397,7 +436,7 @@ const SchedulesPage: React.FC = () => {
                     filteredSchedules.map((schedule) => {
                       const bus = getBusDetails(schedule.busId);
                       const route = getRouteDetails(schedule.routeId);
-                      
+
                       return (
                         <tr key={schedule.id}>
                           <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm">
@@ -421,6 +460,9 @@ const SchedulesPage: React.FC = () => {
                           </td>
                           <td className="whitespace-nowrap px-3 py-4 text-sm font-medium text-gray-900">
                             ₹{schedule.farePrice.toLocaleString()}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                            {schedule.automationDuration}
                           </td>
                           <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
                             <div className="flex justify-end gap-2">
@@ -457,7 +499,7 @@ const SchedulesPage: React.FC = () => {
           Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
           {Math.min(currentPage * itemsPerPage, totalRecords)} of {totalRecords} entries
         </div>
-        
+
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
@@ -468,7 +510,7 @@ const SchedulesPage: React.FC = () => {
           >
             Previous
           </Button>
-          
+
           {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
             let pageNum;
             if (totalPages <= 5) {
@@ -494,7 +536,7 @@ const SchedulesPage: React.FC = () => {
               </Button>
             );
           })}
-          
+
           <Button
             variant="outline"
             onClick={goToNextPage}
@@ -532,7 +574,7 @@ const SchedulesPage: React.FC = () => {
                   ))}
                 </select>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700">Route</label>
                 <select
@@ -550,7 +592,7 @@ const SchedulesPage: React.FC = () => {
                   ))}
                 </select>
               </div>
-              
+
               <Input
                 label="Date"
                 type="date"
@@ -560,7 +602,7 @@ const SchedulesPage: React.FC = () => {
                 fullWidth
                 disabled={loading}
               />
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <Input
                   label="Departure Time"
@@ -571,7 +613,7 @@ const SchedulesPage: React.FC = () => {
                   fullWidth
                   disabled={loading}
                 />
-                
+
                 <Input
                   label="Arrival Time"
                   type="time"
@@ -582,7 +624,7 @@ const SchedulesPage: React.FC = () => {
                   disabled={loading}
                 />
               </div>
-              
+
               <Input
                 label="Available Seats"
                 type="number"
@@ -593,7 +635,7 @@ const SchedulesPage: React.FC = () => {
                 disabled={loading}
                 min="1"
               />
-              
+
               <Input
                 label="Fare (₹)"
                 type="number"
@@ -604,7 +646,38 @@ const SchedulesPage: React.FC = () => {
                 disabled={loading}
                 min="1"
               />
-              
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Automation Duration</label>
+                <select
+                  value={formData.automationDuration}
+                  onChange={(e) => setFormData({ ...formData, automationDuration: e.target.value as ScheduleDuration })}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                  disabled={loading}
+                  required
+                >
+                  {Object.values(ScheduleDuration).map(duration => (
+                    <option key={duration} value={duration}>
+                      {duration.replace('_', ' ').toLowerCase()}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="isMasterRecord"
+                  checked={formData.isMasterRecord}
+                  onChange={(e) => setFormData({ ...formData, isMasterRecord: e.target.checked })}
+                  className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                  disabled={loading}
+                />
+                <label htmlFor="isMasterRecord" className="ml-2 block text-sm text-gray-700">
+                  Is Master Record
+                </label>
+              </div>
+
               <div className="flex justify-end gap-3 mt-6">
                 <Button
                   variant="outline"

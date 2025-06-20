@@ -20,7 +20,7 @@ const TransactionsPage: React.FC = () => {
       date: '2025-01-15',
       paymentMethod: 'Credit Card',
     },
-    // Add more transactions...
+  
   ];
 
   const getStatusBadgeClass = (status: string) => {

@@ -3,8 +3,8 @@ import { Plus, Edit, Trash2, Search, MapPin, Clock, ArrowRight, ChevronLeft, Che
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { Route, Stop, OrderBy } from '../../types';
-import api from '../../apiConfig/axios';
 import { formatTime } from '../../components/utils/formatTime';
+import { createRoute, createStop, deleteRoute, fetchRoutes, updateRoute, updateStop } from '../../apiConfig/Bus';
 
 const RoutesPage: React.FC = () => {
   const [routes, setRoutes] = useState<Route[]>([]);
@@ -33,20 +33,18 @@ const RoutesPage: React.FC = () => {
 
   // Fetch routes with pagination
   useEffect(() => {
-    const fetchRoutes = async () => {
+    const fetchRoutesData = async () => {
       try {
         setLoading(true);
-        const response = await api.get('/bus-route', {
-          params: {
-            pageNumber: currentPage - 1,
-            pageSize: itemsPerPage,
-            sortColumn: sortColumn,
-            orderBY: orderBy
-          }
-        });
-        setRoutes(response.data.data);
-        setTotalPages(response.data.totalPages);
-        setTotalRecords(response.data.totalRecords);
+        const { data, totalPages, totalRecords } = await fetchRoutes(
+          currentPage - 1,
+          itemsPerPage,
+          sortColumn,
+          orderBy
+        );
+        setRoutes(data);
+        setTotalPages(totalPages);
+        setTotalRecords(totalRecords);
       } catch (err) {
         setError('Failed to fetch routes');
         console.error(err);
@@ -55,7 +53,7 @@ const RoutesPage: React.FC = () => {
       }
     };
 
-    fetchRoutes();
+    fetchRoutesData();
   }, [currentPage, itemsPerPage, sortColumn, orderBy]);
 
   const filteredRoutes = routes.filter(route => {
@@ -83,13 +81,13 @@ const RoutesPage: React.FC = () => {
       };
 
       if (selectedRoute && selectedRoute.id) {
-        const response = await api.put(`/bus-route/${selectedRoute.id}`, routeData);
+        const updatedRoute  = await await updateRoute(selectedRoute.id, routeData);
         setRoutes(routes.map(route =>
-          route.id === selectedRoute.id ? response.data : route
+         route.id === selectedRoute.id ? updatedRoute : route
         ));
       } else {
-        const response = await api.post('/bus-route', routeData);
-        setRoutes([...routes, response.data]);
+        const newRoute = await createRoute(routeData);
+        setRoutes([...routes, newRoute]);
       }
 
       setShowAddModal(false);
@@ -159,24 +157,6 @@ const RoutesPage: React.FC = () => {
     setSelectedRoute(null);
   };
 
-  //   // Fetch routes on component mount
-  // useEffect(() => {
-  //   const fetchRoutes = async () => {
-  //     try {
-  //       setLoading(true);
-  //       const response = await api.get('/bus-route');
-  //       setRoutes(response.data.data);
-  //     } catch (err) {
-  //       setError('Failed to fetch routes');
-  //       console.error(err);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-
-  //   fetchRoutes();
-  // }, []);
-
   const handleAddStop = () => {
     setFormData({
       ...formData,
@@ -215,11 +195,11 @@ const RoutesPage: React.FC = () => {
 
         let stopId;
         if (stop.id && stop.id > 0) {
-          const response = await api.put(`/bus-stop/${stop.id}`, stopData);
-          stopId = response.data.id;
+          const response = await updateStop(stop.id, stopData);
+          stopId = response.id;
         } else {
-          const response = await api.post('/bus-stop', stopData);
-          stopId = response.data.id;
+          const response = await createStop(stopData);
+          stopId = response.id;
         }
         stopIds.push(stopId);
       } catch (err) {
@@ -235,7 +215,7 @@ const RoutesPage: React.FC = () => {
   const handleDeleteRoute = async (routeId: number) => {
     if (window.confirm('Are you sure you want to delete this route?')) {
       try {
-        await api.delete(`/bus-route/${routeId}`);
+        await deleteRoute(routeId);
         setRoutes(routes.filter(route => route.id !== routeId));
       } catch (err) {
         console.error('Error deleting route:', err);

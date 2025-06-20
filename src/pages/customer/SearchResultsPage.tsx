@@ -4,9 +4,9 @@ import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/layout/Footer';
 import BusSearchForm from '../../components/booking/BusSearchForm';
 import BusList from '../../components/booking/BusList';
-import SeatLayout from '../../components/booking/SeatLayout'; // Import the SeatLayout component
-import { Bus, Route, Schedule, Seat } from '../../types';
-import { fetchBuses, fetchRoutes, fetchSchedules } from '../../apiConfig/Bus';
+import SeatLayout from '../../components/booking/SeatLayout';
+import { Bus, OrderBy, Route, Schedule, Seat } from '../../types';
+import { fetchBuses, fetchRoutes, fetchSchedules, fetchSeats } from '../../apiConfig/Bus';
 
 const SearchResultsPage: React.FC = () => {
   const location = useLocation();
@@ -31,36 +31,22 @@ const SearchResultsPage: React.FC = () => {
     return `${year}-${month}-${day}`;
   }
 
-
-  const fetchSeats = async (scheduleId: number): Promise<Seat[]> => {
-  try {
-    const response = await fetch(`https://bus-booking-svc-latest.onrender.com/bus-seats/view-seats/${scheduleId}`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch seats');
-    }
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching seats:', error);
-    return [];
-  }
-};
-
-const handleSeatView = async (schedule: Schedule) => {
+  const handleSeatView = async (schedule: Schedule) => {
   setIsLoading(true);
   try {
     const seats = await fetchSeats(schedule.id);
-    console.log('seats', seats);
-    const updatedSchedule = { ...schedule, seats }; // Add seats to the schedule
+    const updatedSchedule: Schedule = { 
+      ...schedule, 
+      seats: seats 
+    };
     setSelectedSchedule(updatedSchedule);
-    setSelectedSeats([]); // Reset selected seats when viewing a new schedule
+    setSelectedSeats([]);
   } catch (error) {
     console.error('Error loading seats:', error);
   } finally {
     setIsLoading(false);
   }
 };
-
-
 
   const handleSeatSelect = (seat: Seat) => {
     setSelectedSeats(prev => [...prev, seat]);
@@ -70,6 +56,7 @@ const handleSeatView = async (schedule: Schedule) => {
     setSelectedSeats(prev => prev.filter(s => s.id !== seat.id));
   };
 
+
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -77,11 +64,11 @@ const handleSeatView = async (schedule: Schedule) => {
         const [schedulesData, busesData, routesData] = await Promise.all([
           fetchSchedules(source, destination, date),
           fetchBuses(),
-          fetchRoutes()
+          fetchRoutes(1, 100, 'id', OrderBy.ASC) 
         ]);
         setSchedules(schedulesData);
         setBuses(busesData);
-        setRoutes(routesData);
+        setRoutes(routesData.data || []);
       } catch (error) {
         console.error('Error loading data:', error);
       } finally {
@@ -122,6 +109,7 @@ const handleSeatView = async (schedule: Schedule) => {
               onSeatSelect={handleSeatSelect}
               onSeatDeselect={handleSeatDeselect}
               selectedSeats={selectedSeats}
+              //onBack={handleBackToResults}
             />
           ) : (
             <BusList

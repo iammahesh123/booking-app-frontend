@@ -3,9 +3,8 @@ import { Plus, Edit, Trash2, Search, ChevronLeft, ChevronRight } from 'lucide-re
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { Bus, OrderBy } from '../../types';
-import { busApi } from '../../apiConfig/Bus';
+import api, { busApi } from '../../apiConfig/Bus';
 import Select from 'react-select';
-import api from '../../apiConfig/axios';
 
 interface FormErrors {
   busName?: string;
