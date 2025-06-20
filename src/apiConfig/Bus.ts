@@ -1,15 +1,65 @@
 import axios from 'axios';
 import { ApiScheduleResponse, Bus, OrderBy, Route, Schedule, ScheduleDuration, Seat, SeatStatus, SeatType } from '../types';
 
-const API_BASE_URL = 'https://bus-booking-svc-latest.onrender.com';
+// const API_BASE_URL = 'https://bus-booking-svc-latest.onrender.com';
+const API_BASE_URL = 'http://localhost:8080';
 
-// Configure axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    if (error.response.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      
+      try {
+        const refreshToken = localStorage.getItem('refreshToken');
+        const response = await axios.post(`${API_BASE_URL}/auth-user/refresh-token`, { refreshToken });
+        
+        localStorage.setItem('accessToken', response.data.accessToken);
+        localStorage.setItem('refreshToken', response.data.refreshToken);
+        originalRequest.headers.Authorization = `Bearer ${response.data.accessToken}`;
+        return api(originalRequest);
+      } catch (refreshError) {
+        console.error('Token refresh failed:', refreshError);
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        window.location.href = '/login';
+        return Promise.reject(refreshError);
+      }
+    }
+    
+    return Promise.reject(error);
+  }
+);
+
+const handleApiError = (error: unknown, context: string): never => {
+  if (axios.isAxiosError(error)) {
+    const message = error.response?.data?.message || error.message;
+    throw new Error(`${context}: ${message}`);
+  }
+  throw new Error(`${context}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+};
 
 export const busApi = {
 
@@ -120,6 +170,9 @@ export const registerUser = async (userData: {
 export const loginUser = async (credentials: { email: string; password: string }) => {
   try {
     const response = await axios.post(`${API_BASE_URL}/auth-user/login`, credentials);
+
+    localStorage.setItem('accessToken', response.data.accessToken);
+    localStorage.setItem('refreshToken', response.data.refreshToken);
 
     return {
       id: response.data.id,
@@ -575,4 +628,49 @@ export const routeApi = {
 };
 
 export default api;
+
+export const authApi = {
+  register: async (userData: {
+    fullName: string;
+    email: string;
+    password: string;
+    phoneNumber?: string;
+  }): Promise<void> => {
+    try {
+      await api.post('/auth-user/register', userData);
+    } catch (error) {
+      throw handleApiError(error, 'Error registering user');
+    }
+  },
+
+  login: async (credentials: { email: string; password: string }): Promise<User> => {
+    try {
+      const response = await api.post(`${API_BASE_URL}/auth-user/login`, credentials);
+
+      localStorage.setItem('accessToken', response.data.accessToken);
+      localStorage.setItem('refreshToken', response.data.refreshToken);
+
+      return {
+        id: response.data.id,
+        name: response.data.username,
+        email: response.data.email,
+        role: response.data.role.toLowerCase() as 'admin' | 'user',
+        phone: response.data.phoneNumber,
+      };
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          throw new Error('Invalid email or password');
+        }
+        if (error.response?.status === 403) {
+          throw new Error('Account not verified');
+        }
+      }
+      throw handleApiError(error, 'Login failed');
+    }
+  },
+};
+
+
+
 
