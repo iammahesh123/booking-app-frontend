@@ -1,11 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Plus, Edit, Trash2, Search, ChevronLeft, ChevronRight, ArrowUp, ArrowDown } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { Schedule, Bus, Route, ApiScheduleResponse, OrderBy } from '../../types';
 import { busApi, routeApi, scheduleApi } from '../../apiConfig/Bus';
-
-
 
 enum ScheduleDuration {
   ONE_MONTH = 'ONE_MONTH',
@@ -101,7 +99,7 @@ const SchedulesPage: React.FC = () => {
     totalSeats: 0,
     farePrice: 0,
     automationDuration: ScheduleDuration.ONE_MONTH,
-    isMasterRecord: false
+    isMasterRecord: true
   });
 
   // Pagination and sorting
@@ -112,55 +110,73 @@ const SchedulesPage: React.FC = () => {
   const [sortColumn, setSortColumn] = useState<string>('id');
   const [orderBy, setOrderBy] = useState<OrderBy>(OrderBy.ASC);
 
-  // Fetch data from API
-const fetchData = async () => {
-  try {
-    setLoading(true);
-    const [schedulesRes, busesRes, routesRes] = await Promise.all([
-      scheduleApi.getSchedules({
-        pageNumber: currentPage - 1,
-        pageSize: itemsPerPage,
-        sortColumn: sortColumn,
-        orderBY: orderBy
-      }),
-      busApi.getAll(),
-      routeApi.getAllRoutes()
-    ]);
+  // Memoized fetch function
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const [schedulesRes, busesRes, routesRes] = await Promise.all([
+        scheduleApi.getSchedules({
+          pageNumber: currentPage - 1,
+          pageSize: itemsPerPage,
+          sortColumn,
+          orderBY: orderBy
+        }),
+        busApi.getAll(),
+        routeApi.getAllRoutes()
+      ]);
 
-    const mappedSchedules = schedulesRes.data.data.map((apiSchedule: ApiScheduleResponse) =>
-      mapApiResponseToSchedule(apiSchedule)
-    );
+      const mappedSchedules = schedulesRes.data.data.map((apiSchedule: ApiScheduleResponse) =>
+        mapApiResponseToSchedule(apiSchedule)
+      );
 
-    setSchedules(mappedSchedules);
-    setBuses(busesRes.data.data);
-    setRoutes(routesRes.data.data);
-    setTotalPages(schedulesRes.data.totalPages);
-    setTotalRecords(schedulesRes.data.totalRecords);
-    setError(null);
-  } catch (err) {
-    setError('Failed to fetch data. Please try again later.');
-    console.error('Error fetching data:', err);
-  } finally {
-    setLoading(false);
-  }
-};
+      setSchedules(mappedSchedules);
+      setBuses(busesRes.data);
+      setRoutes(routesRes.data.data);
+      setTotalPages(schedulesRes.data.totalPages);
+      setTotalRecords(schedulesRes.data.totalRecords);
+      setError(null);
+    } catch (err) {
+      setError('Failed to fetch data. Please try again later.');
+      console.error('Error fetching data:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentPage, itemsPerPage, sortColumn, orderBy]);
+
+  // Fetch data on component mount and when dependencies change
+  useEffect(() => {
+    const controller = new AbortController();
+    
+    fetchData();
+
+    return () => {
+      controller.abort();
+    };
+  }, [fetchData]);
 
   // Helper functions
-  const getBusDetails = (busId: number): Bus | undefined => {
-    return buses.find(bus => Number(bus.id) === Number(busId));
-  };
+const getBusDetails = (busId: number): Bus | undefined => {
+  if (!Array.isArray(buses)) {
+    console.error('buses is not an array:', buses);
+    return undefined;
+  }
+  return buses.find(bus => Number(bus.id) === Number(busId));
+};
 
   const getRouteDetails = (routeId: number): Route | undefined => {
     return routes.find(route => route.id === routeId);
   };
 
-  // Filter schedules based on search term
-  const filteredSchedules = schedules.filter(schedule => {
-    const bus = getBusDetails(schedule.busId);
-    const route = getRouteDetails(schedule.routeId);
-    const searchString = `${bus?.busName} ${route?.sourceCity || ''} ${route?.destinationCity || ''}`.toLowerCase();
-    return searchString.includes(searchTerm.toLowerCase());
-  });
+  // Memoized filtered schedules
+  const filteredSchedules = useMemo(() => {
+    const searchLower = searchTerm.toLowerCase();
+    return schedules.filter(schedule => {
+      const bus = getBusDetails(schedule.busId);
+      const route = getRouteDetails(schedule.routeId);
+      const searchString = `${bus?.busName} ${route?.sourceCity || ''} ${route?.destinationCity || ''}`.toLowerCase();
+      return searchString.includes(searchLower);
+    });
+  }, [schedules, searchTerm, buses, routes]);
 
   // Sorting handler
   const handleSort = (column: string) => {
@@ -200,60 +216,57 @@ const fetchData = async () => {
   };
 
   // CRUD operations
-const handleAddSchedule = async () => {
-  try {
-    setLoading(true);
-    const scheduleData = {
-      busId: formData.busId,
-      routeId: formData.routeId,
-      departureTime: formData.departureTime,
-      arrivalTime: formData.arrivalTime,
-      scheduleDate: formData.scheduleDate,
-      totalSeats: formData.totalSeats,
-      farePrice: formData.farePrice,
-      automationDuration: formData.automationDuration,
-      isMasterRecord: formData.isMasterRecord
-    };
+  const handleAddSchedule = async () => {
+    try {
+      setLoading(true);
+      const scheduleData = {
+        busId: formData.busId,
+        routeId: formData.routeId,
+        departureTime: formData.departureTime,
+        arrivalTime: formData.arrivalTime,
+        scheduleDate: formData.scheduleDate,
+        totalSeats: formData.totalSeats,
+        farePrice: formData.farePrice,
+        automationDuration: formData.automationDuration,
+        isMasterRecord: formData.isMasterRecord
+      };
 
-    let response;
-    if (selectedSchedule) {
-      // Update existing schedule
-      response = await scheduleApi.updateSchedule(selectedSchedule.id, scheduleData);
-      setSchedules(schedules.map(s =>
-        s.id === selectedSchedule.id ? mapApiResponseToSchedule(response.data) : s
-      ));
-    } else {
-      // Create new schedule
-      response = await scheduleApi.createSchedule(scheduleData);
-      setSchedules([...schedules, mapApiResponseToSchedule(response.data)]);
+      let response;
+      if (selectedSchedule) {
+        response = await scheduleApi.updateSchedule(selectedSchedule.id, scheduleData);
+        setSchedules(schedules.map(s =>
+          s.id === selectedSchedule.id ? mapApiResponseToSchedule(response.data) : s
+        ));
+      } else {
+        response = await scheduleApi.createSchedule(scheduleData);
+        setSchedules(prev => [...prev, mapApiResponseToSchedule(response.data)]);
+      }
+      setShowAddModal(false);
+      resetForm();
+      setError(null);
+    } catch (err) {
+      setError('Failed to save schedule. Please try again.');
+      console.error('Error saving schedule:', err);
+    } finally {
+      setLoading(false);
     }
-    setShowAddModal(false);
-    resetForm();
-    setError(null);
-    fetchData();
-  } catch (err) {
-    setError('Failed to save schedule. Please try again.');
-    console.error('Error saving schedule:', err);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
-
-const handleDeleteSchedule = async (scheduleId: number) => {
-  try {
-    setLoading(true);
-    await scheduleApi.deleteSchedule(scheduleId);
-    setSchedules(schedules.filter(schedule => schedule.id !== scheduleId));
-    setError(null);
-    fetchData();
-  } catch (err) {
-    setError('Failed to delete schedule. Please try again.');
-    console.error('Error deleting schedule:', err);
-  } finally {
-    setLoading(false);
-  }
-};
+  const handleDeleteSchedule = async (scheduleId: number) => {
+    if (!window.confirm('Are you sure you want to delete this schedule?')) return;
+    
+    try {
+      setLoading(true);
+      await scheduleApi.deleteSchedule(scheduleId);
+      setSchedules(prev => prev.filter(schedule => schedule.id !== scheduleId));
+      setError(null);
+    } catch (err) {
+      setError('Failed to delete schedule. Please try again.');
+      console.error('Error deleting schedule:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Form helpers
   const resetForm = () => {
@@ -287,13 +300,34 @@ const handleDeleteSchedule = async (scheduleId: number) => {
     setShowAddModal(true);
   };
 
+  // Form validation
+  const isFormValid = useMemo(() => {
+    return (
+      formData.busId > 0 &&
+      formData.routeId > 0 &&
+      formData.scheduleDate &&
+      formData.departureTime &&
+      formData.arrivalTime &&
+      formData.totalSeats > 0 &&
+      formData.farePrice > 0
+    );
+  }, [formData]);
+
   // Render loading or error states
   if (loading && schedules.length === 0) {
-    return <LoadingSpinner />;
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <LoadingSpinner size="large" />
+      </div>
+    );
   }
 
   if (error) {
-    return <ErrorMessage message={error} onRetry={() => window.location.reload()} />;
+    return (
+      <div className="p-6">
+        <ErrorMessage message={error} onRetry={fetchData} />
+      </div>
+    );
   }
 
   return (
@@ -470,6 +504,7 @@ const handleDeleteSchedule = async (scheduleId: number) => {
                                 onClick={() => handleEditClick(schedule)}
                                 className="text-primary hover:text-primary-dark"
                                 disabled={loading}
+                                aria-label="Edit schedule"
                               >
                                 <Edit className="h-5 w-5" />
                               </button>
@@ -477,6 +512,7 @@ const handleDeleteSchedule = async (scheduleId: number) => {
                                 onClick={() => handleDeleteSchedule(schedule.id)}
                                 className="text-red-600 hover:text-red-900"
                                 disabled={loading}
+                                aria-label="Delete schedule"
                               >
                                 <Trash2 className="h-5 w-5" />
                               </button>
@@ -552,13 +588,13 @@ const handleDeleteSchedule = async (scheduleId: number) => {
       {/* Add/Edit Schedule Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-medium mb-4">
               {selectedSchedule ? 'Edit Schedule' : 'Add New Schedule'}
             </h3>
             <form className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Bus</label>
+                <label className="block text-sm font-medium text-gray-700">Bus *</label>
                 <select
                   value={formData.busId}
                   onChange={(e) => setFormData({ ...formData, busId: Number(e.target.value) })}
@@ -576,7 +612,7 @@ const handleDeleteSchedule = async (scheduleId: number) => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">Route</label>
+                <label className="block text-sm font-medium text-gray-700">Route *</label>
                 <select
                   value={formData.routeId}
                   onChange={(e) => setFormData({ ...formData, routeId: Number(e.target.value) })}
@@ -594,7 +630,7 @@ const handleDeleteSchedule = async (scheduleId: number) => {
               </div>
 
               <Input
-                label="Date"
+                label="Date *"
                 type="date"
                 value={formData.scheduleDate}
                 onChange={(e) => setFormData({ ...formData, scheduleDate: e.target.value })}
@@ -605,7 +641,7 @@ const handleDeleteSchedule = async (scheduleId: number) => {
 
               <div className="grid grid-cols-2 gap-4">
                 <Input
-                  label="Departure Time"
+                  label="Departure Time *"
                   type="time"
                   value={formData.departureTime}
                   onChange={(e) => setFormData({ ...formData, departureTime: e.target.value })}
@@ -615,7 +651,7 @@ const handleDeleteSchedule = async (scheduleId: number) => {
                 />
 
                 <Input
-                  label="Arrival Time"
+                  label="Arrival Time *"
                   type="time"
                   value={formData.arrivalTime}
                   onChange={(e) => setFormData({ ...formData, arrivalTime: e.target.value })}
@@ -626,7 +662,7 @@ const handleDeleteSchedule = async (scheduleId: number) => {
               </div>
 
               <Input
-                label="Available Seats"
+                label="Available Seats *"
                 type="number"
                 value={formData.totalSeats.toString()}
                 onChange={(e) => setFormData({ ...formData, totalSeats: parseInt(e.target.value) || 0 })}
@@ -637,7 +673,7 @@ const handleDeleteSchedule = async (scheduleId: number) => {
               />
 
               <Input
-                label="Fare (₹)"
+                label="Fare (₹) *"
                 type="number"
                 value={formData.farePrice.toString()}
                 onChange={(e) => setFormData({ ...formData, farePrice: parseInt(e.target.value) || 0 })}
@@ -648,7 +684,7 @@ const handleDeleteSchedule = async (scheduleId: number) => {
               />
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">Automation Duration</label>
+                <label className="block text-sm font-medium text-gray-700">Automation Duration *</label>
                 <select
                   value={formData.automationDuration}
                   onChange={(e) => setFormData({ ...formData, automationDuration: e.target.value as ScheduleDuration })}
@@ -692,7 +728,7 @@ const handleDeleteSchedule = async (scheduleId: number) => {
                 <Button
                   variant="primary"
                   onClick={handleAddSchedule}
-                  disabled={loading || !formData.busId || !formData.routeId || !formData.scheduleDate || !formData.departureTime || !formData.arrivalTime}
+                  disabled={loading || !isFormValid}
                 >
                   {loading ? (
                     <LoadingSpinner size="small" />
