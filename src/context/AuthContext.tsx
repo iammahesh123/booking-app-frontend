@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { User } from '../types';
-import { loginUser, registerUser } from '../apiConfig/Bus';
+import { authApi } from '../apiConfig/Bus';
 
 interface AuthContextType {
   user: User | null;
@@ -46,21 +46,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     setError(null);
     try {
-      const response = await loginUser({ email, password });
+      const userData = await authApi.login({ email, password });
       
-      localStorage.setItem('accessToken', response.accessToken);
-      localStorage.setItem('refreshToken', response.refreshToken);
-      
-      const userData: User = {
-        id: response.id,
-        name: response.username,
-        email: response.email,
-        phone: response.phoneNumber,
-        role: response.role.toLowerCase() as User['role'] // Ensure proper type casting
+      const userToStore: User = {
+        id: userData.id,
+        name: userData.name,
+        email: userData.email,
+        role: userData.role,
+        phone: userData.phone
       };
       
-      localStorage.setItem('busBookingUser', JSON.stringify(userData));
-      setUser(userData);
+      localStorage.setItem('busBookingUser', JSON.stringify(userToStore));
+      setUser(userToStore);
     } catch (error) {
       console.error('Login failed:', error);
       setError(error instanceof Error ? error.message : 'Login failed. Please try again.');
@@ -74,7 +71,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     setError(null);
     try {
-      await registerUser({
+      await authApi.register({
         fullName: name,
         email,
         password,
@@ -103,19 +100,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError(null);
   }, []);
 
+  const contextValue: AuthContextType = {
+    user,
+    isAuthenticated: !!user,
+    isLoading,
+    error,
+    login,
+    register,
+    logout,
+    clearError
+  };
+
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isAuthenticated: !!user,
-        isLoading,
-        error,
-        login,
-        register,
-        logout,
-        clearError
-      }}
-    >
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
