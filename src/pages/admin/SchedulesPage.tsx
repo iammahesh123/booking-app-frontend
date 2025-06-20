@@ -130,7 +130,7 @@ const SchedulesPage: React.FC = () => {
       );
 
       setSchedules(mappedSchedules);
-      setBuses(busesRes.data);
+      setBuses(busesRes);
       setRoutes(routesRes.data.data);
       setTotalPages(schedulesRes.data.totalPages);
       setTotalRecords(schedulesRes.data.totalRecords);
