@@ -6,7 +6,7 @@ import BusSearchForm from '../../components/booking/BusSearchForm';
 import BusList from '../../components/booking/BusList';
 import SeatLayout from '../../components/booking/SeatLayout';
 import { Bus, OrderBy, Route, Schedule, Seat } from '../../types';
-import { fetchBuses, fetchRoutes, fetchSchedules, fetchSeats } from '../../apiConfig/Bus';
+import { busApi, fetchBuses, fetchRoutes, fetchSchedules, fetchSeats } from '../../apiConfig/Bus';
 
 const SearchResultsPage: React.FC = () => {
   const location = useLocation();
@@ -63,7 +63,7 @@ const SearchResultsPage: React.FC = () => {
         setIsLoading(true);
         const [schedulesData, busesData, routesData] = await Promise.all([
           fetchSchedules(source, destination, date),
-          fetchBuses(),
+          busApi.getAll(),
           fetchRoutes(1, 100, 'id', OrderBy.ASC) 
         ]);
         setSchedules(schedulesData);
