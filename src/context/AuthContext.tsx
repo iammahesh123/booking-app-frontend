@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { User } from '../types';
-import { authApi } from '../apiConfig/Bus';
+import api, { authApi } from '../apiConfig/Bus';
 
 interface AuthContextType {
   user: User | null;
@@ -88,13 +88,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const logout = useCallback(() => {
+// In AuthProvider
+const logout = useCallback(async () => {
+  try {
+    await api.post('/auth-user/logout'); 
+  } catch (error) {
+    console.error('Logout failed:', error);
+  } finally {
     localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
     localStorage.removeItem('busBookingUser');
     setUser(null);
     setError(null);
-  }, []);
+  }
+}, []);
 
   const clearError = useCallback(() => {
     setError(null);
