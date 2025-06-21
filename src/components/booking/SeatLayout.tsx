@@ -36,6 +36,8 @@ const SeatLayout: React.FC<SeatLayoutProps> = ({
   // Organize seats into rows
   const seatRows = useMemo(() => {
     const rows: { [key: string]: Seat[] } = {};
+
+    console.log("Seats data:", seats);
     
     seats.forEach(seat => {
       // Extract row number from format "1-1A" (the number after the dash)
