@@ -11,6 +11,7 @@ const api = axios.create({
   },
 });
 
+// Request interceptor to add the access token to every request
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('accessToken');
@@ -19,31 +20,36 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
+// Response interceptor to handle token refresh automatically
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    if (error.response.status === 401 && !originalRequest._retry) {
+
+    // This condition checks if the error is a 401 and that we haven't already tried to refresh the token
+    if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
+        // The refresh token is in an HttpOnly cookie, so we send the request with credentials
         const response = await axios.post(
           `${API_BASE_URL}/auth-user/refresh-token`,
           {},
           { withCredentials: true }
         );
+
+        // Store the new access token and retry the original request
         localStorage.setItem('accessToken', response.data.accessToken);
         originalRequest.headers.Authorization = `Bearer ${response.data.accessToken}`;
         return api(originalRequest);
 
       } catch (refreshError) {
         console.error('Token refresh failed:', refreshError);
+        // If refresh fails, clear storage and redirect to login
         localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('busBookingUser');
         window.location.href = '/login';
         return Promise.reject(refreshError);
       }
@@ -53,12 +59,57 @@ api.interceptors.response.use(
   }
 );
 
+// Centralized error handler
 const handleApiError = (error: unknown, context: string): never => {
   if (axios.isAxiosError(error)) {
     const message = error.response?.data?.message || error.message;
     throw new Error(`${context}: ${message}`);
   }
   throw new Error(`${context}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+};
+
+// --- AUTH API ---
+export const authApi = {
+  register: async (userData: {
+    fullName: string;
+    email: string;
+    password: string;
+    phoneNumber?: string;
+  }): Promise<void> => {
+    try {
+      await api.post('/auth-user/register', userData);
+    } catch (error) {
+      throw handleApiError(error, 'Error registering user');
+    }
+  },
+
+  login: async (credentials: { email: string; password: string }): Promise<User & { accessToken: string }> => {
+    try {
+      const response = await api.post('/auth-user/login', credentials);
+      // We only store the access token in localStorage, not the refresh token
+      localStorage.setItem('accessToken', response.data.accessToken);
+      
+      return {
+        id: response.data.id,
+        name: response.data.username,
+        email: response.data.email,
+        role: response.data.role.toLowerCase() as 'ADMIN' | 'CUSTOMER',
+        phone: response.data.phoneNumber,
+        accessToken: response.data.accessToken, // Pass the access token up
+      };
+    } catch (error) {
+      throw handleApiError(error, 'Login failed');
+    }
+  },
+
+  logout: async (): Promise<void> => {
+    try {
+        // Tell the backend to handle cookie expiration
+        await api.post('/auth-user/logout');
+    } catch (error) {
+        throw handleApiError(error, 'Logout failed');
+    }
+  }
 };
 
 export const busApi = {
@@ -629,47 +680,6 @@ export const routeApi = {
 
 export default api;
 
-export const authApi = {
-  register: async (userData: {
-    fullName: string;
-    email: string;
-    password: string;
-    phoneNumber?: string;
-  }): Promise<void> => {
-    try {
-      await api.post('/auth-user/register', userData);
-    } catch (error) {
-      throw handleApiError(error, 'Error registering user');
-    }
-  },
-
-  login: async (credentials: { email: string; password: string }): Promise<User> => {
-    try {
-      const response = await api.post(`${API_BASE_URL}/auth-user/login`, credentials);
-
-      localStorage.setItem('accessToken', response.data.accessToken);
-      localStorage.setItem('refreshToken', response.data.refreshToken);
-
-      return {
-        id: response.data.id,
-        name: response.data.username,
-        email: response.data.email,
-        role: response.data.role.toLowerCase() as 'ADMIN' | 'CUSTOMER',
-        phone: response.data.phoneNumber,
-      };
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        if (error.response?.status === 401) {
-          throw new Error('Invalid email or password');
-        }
-        if (error.response?.status === 403) {
-          throw new Error('Account not verified');
-        }
-      }
-      throw handleApiError(error, 'Login failed');
-    }
-  },
-};
 
 
 

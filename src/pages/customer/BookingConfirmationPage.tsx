@@ -5,6 +5,7 @@ import Button from '../../components/ui/Button';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/layout/Footer';
 import { getBookingDetails } from '../../apiConfig/Bus';
+import { Stop } from '../../types';
 
 interface Passenger {
   name: string;
@@ -17,14 +18,21 @@ interface BookingDetails {
   id: number;
   bookingCode: string;
   bus: {
-    name: string;
-    number: string;
+ busName?: string;
+  busNumber?: string;
+  busType: 'AC' | 'NON_AC' | 'SLEEPER' | 'SEMI_SLEEPER';
+  totalSeats: number;
+  busAmenities?: string[];
+  operatorName: string;
   };
   route: {
-    source: string;
-    destination: string;
-    departureTime: string;
-    arrivalTime: string;
+   id: number;
+     sourceCity: string;
+     destinationCity: string;
+     totalDistance: number;
+     totalDuration: string;
+     stopIds?: number[];
+     stops?: Stop[];
   };
   travelDate: string;
   seats: string[];
@@ -209,8 +217,8 @@ const fetchBookingDetails = async (id: string) => {
                   <div className="flex items-start space-x-3">
                     <Bus className="h-5 w-5 text-gray-400 mt-0.5" />
                     <div>
-                      <p className="font-medium text-gray-900">{bookingDetails.bus.name}</p>
-                      <p className="text-sm text-gray-500">{bookingDetails.bus.number}</p>
+                      <p className="font-medium text-gray-900">{bookingDetails.bus.busName}</p>
+                      <p className="text-sm text-gray-500">{bookingDetails.bus.busNumber}</p>
                     </div>
                   </div>
                 </div>
@@ -223,14 +231,14 @@ const fetchBookingDetails = async (id: string) => {
                       <MapPin className="h-5 w-5 text-gray-400 mt-0.5" />
                       <div>
                         <p className="text-sm text-gray-500">From</p>
-                        <p className="font-medium text-gray-900">{bookingDetails.route.source}</p>
+                        <p className="font-medium text-gray-900">{bookingDetails.route.sourceCity}</p>
                       </div>
                     </div>
                     <div className="flex items-start space-x-3">
                       <MapPin className="h-5 w-5 text-gray-400 mt-0.5" />
                       <div>
                         <p className="text-sm text-gray-500">To</p>
-                        <p className="font-medium text-gray-900">{bookingDetails.route.destination}</p>
+                        <p className="font-medium text-gray-900">{bookingDetails.route.destinationCity}</p>
                       </div>
                     </div>
                     <div className="flex items-start space-x-3">
@@ -247,7 +255,7 @@ const fetchBookingDetails = async (id: string) => {
                       <div>
                         <p className="text-sm text-gray-500">Time</p>
                         <p className="font-medium text-gray-900">
-                          {formatTime(bookingDetails.route.departureTime)} - {formatTime(bookingDetails.route.arrivalTime)}
+                          {/* {formatTime(bookingDetails.route.departureTime)} - {formatTime(bookingDetails.route.arrivalTime)} */}
                         </p>
                       </div>
                     </div>
