@@ -94,7 +94,7 @@ const fetchBookingDetails = async (id: string) => {
   try {
     setLoading(true);
     const data = await getBookingDetails(id);
-    setBookingDetails(data);
+    // setBookingDetails(data);
   } catch (err) {
     console.error('Failed to fetch booking details:', err);
     setError('Failed to load booking details. Please try again later.');
