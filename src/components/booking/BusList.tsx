@@ -92,7 +92,7 @@ const BusList: React.FC<BusListProps> = ({ schedules, buses, routes, date, onSea
   });
   
   const handleViewSeats = (schedule: Schedule) => {
-    onSeatView(schedule); // Call the onSeatView prop with the schedule
+    onSeatView(schedule); 
   };
 
   console.log('handleViewSeats called with schedule:', handleViewSeats);
