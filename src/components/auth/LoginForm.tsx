@@ -5,7 +5,11 @@ import { useAuth } from '../../context/AuthContext';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
 
-const LoginForm: React.FC = () => {
+interface LoginFormProps {
+  onLoginSuccess?: () => void;
+}
+
+const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
   const [state, setState] = useState({
     email: '',
     password: '',
@@ -27,27 +31,33 @@ const LoginForm: React.FC = () => {
       const user = await login(state.email, state.password);
 
       const userData = localStorage.getItem('busBookingUser');
-      if (!userData) {  
+      if (!userData) {
         throw new Error('Authentication failed');
       }
 
       const { role } = JSON.parse(userData);
 
       // Role-based navigation
-      switch (role.toLowerCase()) {
-        case 'admin':
-          navigate('/admin');
-          break;
-        case 'driver':
-          navigate('/driver/dashboard');
-          break;
-        case 'customer':
-          navigate('/');
-          break;
-        default:
-          navigate('/');
-      }
+      // switch (role.toLowerCase()) {
+      //   case 'admin':
+      //     navigate('/admin');
+      //     break;
+      //   case 'driver':
+      //     navigate('/driver/dashboard');
+      //     break;
+      //   case 'customer':
+      //     navigate('/');
+      //     break;
+      //   default:
+      //     navigate('/');
+      // }
       window.location.reload();
+
+      if (onLoginSuccess) {
+        onLoginSuccess();
+      }
+    } catch (error) {
+      setState((prev) => ({ ...prev, error: error.message }));
     } finally {
       setState((prev) => ({ ...prev, isLoading: false }));
     }
@@ -85,9 +95,9 @@ const LoginForm: React.FC = () => {
               className="text-gray-500 focus:outline-none"
             >
               {state.showPassword ? (
-                <Eye className='h-4 w-4'/>
+                <Eye className='h-4 w-4' />
               ) : (
-              <EyeOff className='h-4 w-4'/>
+                <EyeOff className='h-4 w-4' />
               )}
             </button>
           }

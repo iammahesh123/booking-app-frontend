@@ -3,6 +3,9 @@ import { ArrowRight, Filter, ChevronsUpDown, Clock, Coffee, Wifi, PlugZap, Snowf
 import Button from '../ui/Button';
 import { Schedule, Bus, Route } from '../../data/types';
 import { busTypes, departureTimings } from '../../data/MockData';
+import { useAuth } from '../../context/AuthContext';
+import Modal from '../ui/Modal';
+import LoginForm from '../auth/LoginForm';
 
 interface BusListProps {
   schedules: Schedule[];
@@ -35,16 +38,20 @@ const BusList: React.FC<BusListProps> = ({ schedules, buses, routes, date, onSea
   const [sortBy, setSortBy] = useState('departure');
   const [showStops, setShowStops] = useState(false);
 
+  const { isAuthenticated } = useAuth();
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
+
   const filteredSchedules = schedules.filter(schedule => {
     const bus = getBusDetails(schedule.busId, buses);
-    
+
     if (busType !== 'all' && bus?.busType !== busType) {
       return false;
     }
-    
+
     if (departureTime !== 'all') {
       const hour = parseInt(schedule.departureTime.split(':')[0]);
-      
+
       if (departureTime === 'morning' && (hour < 6 || hour >= 12)) {
         return false;
       } else if (departureTime === 'afternoon' && (hour < 12 || hour >= 16)) {
@@ -55,10 +62,10 @@ const BusList: React.FC<BusListProps> = ({ schedules, buses, routes, date, onSea
         return false;
       }
     }
-    
+
     return true;
   });
-  
+
   const sortedSchedules = [...filteredSchedules].sort((a, b) => {
     if (sortBy === 'departure') {
       return a.departureTime.localeCompare(b.departureTime);
@@ -75,13 +82,25 @@ const BusList: React.FC<BusListProps> = ({ schedules, buses, routes, date, onSea
     }
     return 0;
   });
-  
+
   const handleViewSeats = (schedule: Schedule) => {
-    onSeatView(schedule); 
+    if (isAuthenticated) {
+      onSeatView(schedule);
+    } else {
+      setSelectedSchedule(schedule);
+      setShowLoginModal(true);
+    }
+  };
+
+  const handleLoginSuccess = () => {
+    setShowLoginModal(false);
+    if (selectedSchedule) {
+      onSeatView(selectedSchedule);
+    }
   };
 
   console.log('handleViewSeats called with schedule:', handleViewSeats);
-  
+
   const getAmenityIcon = (amenity: string) => {
     switch (amenity.toLowerCase()) {
       case 'wifi':
@@ -96,9 +115,19 @@ const BusList: React.FC<BusListProps> = ({ schedules, buses, routes, date, onSea
         return null;
     }
   };
-  
+
   return (
     <div className="space-y-4">
+      <Modal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        title="Login Required"
+      >
+        <p className="mb-4 text-gray-600">
+          You need to login to view seat availability and book tickets.
+        </p>
+        <LoginForm onLoginSuccess={handleLoginSuccess} />
+      </Modal>
       <div className="bg-white rounded-lg shadow p-4">
         <div className="flex items-center justify-between">
           <div>
@@ -109,7 +138,7 @@ const BusList: React.FC<BusListProps> = ({ schedules, buses, routes, date, onSea
               For {new Date(date).toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
             </p>
           </div>
-          
+
           <Button
             variant="outline"
             size="sm"
@@ -119,7 +148,7 @@ const BusList: React.FC<BusListProps> = ({ schedules, buses, routes, date, onSea
             Filter & Sort
           </Button>
         </div>
-        
+
         {filterOpen && (
           <div className="mt-4 border-t pt-4 grid gap-4 md:grid-cols-3">
             <div>
@@ -138,7 +167,7 @@ const BusList: React.FC<BusListProps> = ({ schedules, buses, routes, date, onSea
                 ))}
               </div>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Departure Time</label>
               <div className="space-y-2">
@@ -155,7 +184,7 @@ const BusList: React.FC<BusListProps> = ({ schedules, buses, routes, date, onSea
                 ))}
               </div>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Sort By</label>
               <div className="space-y-2">
@@ -209,7 +238,7 @@ const BusList: React.FC<BusListProps> = ({ schedules, buses, routes, date, onSea
           </div>
         )}
       </div>
-      
+
       {filteredSchedules.length === 0 ? (
         <div className="bg-white rounded-lg shadow p-8 text-center">
           <p className="text-lg text-gray-700 mb-2">No buses found matching your criteria.</p>
@@ -220,7 +249,7 @@ const BusList: React.FC<BusListProps> = ({ schedules, buses, routes, date, onSea
           {sortedSchedules.map((schedule) => {
             const bus = getBusDetails(schedule.busId, buses);
             const route = getRouteDetails(schedule.routeId, routes);
-            
+
             return (
               <div key={schedule.id} className="bg-white rounded-lg shadow overflow-hidden hover:shadow-md transition-shadow">
                 <div className="p-4">
@@ -229,13 +258,13 @@ const BusList: React.FC<BusListProps> = ({ schedules, buses, routes, date, onSea
                       <h3 className="text-lg font-semibold">{bus?.busName}</h3>
                       <p className="text-sm text-gray-500">{bus?.busType} • {bus?.busNumber}</p>
                     </div>
-                    
+
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 md:gap-8">
                       <div className="text-center">
                         <p className="text-lg font-semibold">{formatTime(schedule.departureTime)}</p>
                         <p className="text-sm text-gray-500">{route?.sourceCity}</p>
                       </div>
-                      
+
                       <div className="hidden md:block text-center">
                         <div className="flex items-center gap-1">
                           <div className="h-1 w-1 rounded-full bg-gray-400"></div>
@@ -244,12 +273,12 @@ const BusList: React.FC<BusListProps> = ({ schedules, buses, routes, date, onSea
                         </div>
                         <p className="text-xs text-gray-500 mt-1">{route?.totalDuration}</p>
                       </div>
-                      
+
                       <div className="text-center">
                         <p className="text-lg font-semibold">{formatTime(schedule.arrivalTime)}</p>
                         <p className="text-sm text-gray-500">{route?.destinationCity}</p>
                       </div>
-                      
+
                       <div className="text-center">
                         <p className="text-lg font-semibold text-green-600">₹{schedule.farePrice}</p>
                         <p className="text-sm text-gray-500">{schedule.totalSeats} seats</p>
@@ -257,7 +286,7 @@ const BusList: React.FC<BusListProps> = ({ schedules, buses, routes, date, onSea
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="px-4 py-3 bg-gray-50 flex flex-col sm:flex-row items-start sm:items-center justify-between border-t border-gray-200">
                   <div className="flex flex-wrap gap-2 mb-3 sm:mb-0">
                     {bus?.busAmenities.map((amenity, index) => (
@@ -267,7 +296,7 @@ const BusList: React.FC<BusListProps> = ({ schedules, buses, routes, date, onSea
                       </span>
                     ))}
                   </div>
-                  
+
                   <Button
                     variant="primary"
                     size="sm"
@@ -287,7 +316,7 @@ const BusList: React.FC<BusListProps> = ({ schedules, buses, routes, date, onSea
                       {route?.stops?.length || 0} stops
                       <ChevronsUpDown size={16} className="ml-1" />
                     </button>
-                    
+
                     {showStops && (
                       <div className="mt-2 space-y-2">
                         {route?.stops?.map((stop, index) => (
