@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 // import { useAuth } from '../../context/AuthContext';
-import { mockBookings } from '../../components/utils/MockData';
 import { X, Eye, AlertTriangle } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import { Link } from 'react-router-dom';
 import CustomerLayout from '../../components/layout/CustomerLayout';
+import { mockBookings } from '../../data/MockData';
 
 const MyBookingsPage: React.FC = () => {
   // const {  } = useAuth();

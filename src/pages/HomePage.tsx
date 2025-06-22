@@ -6,7 +6,7 @@ import Footer from '../components/layout/Footer';
 import BusSearchForm from '../components/booking/BusSearchForm';
 import Button from '../components/ui/Button';
 import AuthModal from '../components/auth/AuthModal';
-import { mockPopularRoutes } from '../../src/components/utils/MockData';
+import { mockPopularRoutes } from '../data/MockData';
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();

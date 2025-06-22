@@ -5,7 +5,7 @@ import Footer from '../../components/layout/Footer';
 import BusSearchForm from '../../components/booking/BusSearchForm';
 import BusList from '../../components/booking/BusList';
 import SeatLayout from '../../components/booking/SeatLayout';
-import { Bus, OrderBy, Route, Schedule, Seat } from '../../types';
+import { Bus, OrderBy, Route, Schedule, Seat } from '../../data/types';
 import { busApi, fetchRoutes, fetchSchedules, fetchSeats } from '../../apiConfig/Bus';
 
 const SearchResultsPage: React.FC = () => {

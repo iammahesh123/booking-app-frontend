@@ -1,4 +1,4 @@
-import { User, Bus, Route, Schedule, Seat, Booking, PopularRoute, BookingSummary } from '../../types';
+import { User, Bus, Route, Schedule, Seat, Booking, PopularRoute, BookingSummary } from './types';
 
 export const mockUsers: User[] = [
   {
@@ -247,15 +247,15 @@ export const mockRoutes: Route[] = [
 //   const seats: Seat[] = [];
 //   const rows = 10;
 //   const seatsPerRow = 4; // 2 on each side with an aisle
-  
+
 //   for (let row = 1; row <= rows; row++) {
 //     for (let seatNum = 1; seatNum <= seatsPerRow; seatNum++) {
 //       const seatLetter = String.fromCharCode(64 + seatNum); // A, B, C, D
 //       const seatNumber = `${row}${seatLetter}`;
-      
+
 //       // Randomly decide if a seat is booked or available
 //       const status = Math.random() < 0.3 ? 'booked' : 'available';
-      
+
 //       // Determine seat type
 //       let type: 'window' | 'aisle' | 'middle' | 'sleeper';
 //       if (seatNum === 1 || seatNum === 4) {
@@ -263,16 +263,16 @@ export const mockRoutes: Route[] = [
 //       } else {
 //         type = 'aisle';
 //       }
-      
+
 //       // Generate price (window seats are slightly more expensive)
 //       const basePrice = scheduleId === 1 ? 1800 : 
 //                         scheduleId === 2 ? 1200 : 
 //                         scheduleId === 3 ? 850 : 
 //                         scheduleId === 4 ? 450 : 
 //                         scheduleId === 5 ? 650 : 1750;
-      
+
 //       const price = type === 'window' ? basePrice + 50 : basePrice;
-      
+
 //       seats.push({
 //         id: row * 10 + seatNum, // or any unique number logic
 //         seatNumber: seatNumber,
@@ -282,7 +282,7 @@ export const mockRoutes: Route[] = [
 //       });
 //     }
 //   }
-  
+
 //   return seats;
 // };
 
@@ -326,3 +326,19 @@ export const mockBookingSummary: BookingSummary = {
   cancelledBookings: 87,
   upcomingBookings: 215,
 };
+
+export const busTypes = [
+  { value: 'all', label: 'All Buses' },
+  { value: 'AC', label: 'AC' },
+  { value: 'Non-AC', label: 'Non-AC' },
+  { value: 'Sleeper', label: 'Sleeper' },
+  { value: 'Semi-Sleeper', label: 'Semi-Sleeper' },
+];
+
+export const departureTimings = [
+  { value: 'all', label: 'All Timings' },
+  { value: 'morning', label: 'Morning (6AM - 12PM)' },
+  { value: 'afternoon', label: 'Afternoon (12PM - 4PM)' },
+  { value: 'evening', label: 'Evening (4PM - 8PM)' },
+  { value: 'night', label: 'Night (8PM - 6AM)' },
+];

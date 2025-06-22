@@ -4,9 +4,9 @@ import { ArrowLeft, Info, MapPin, Calendar, Clock } from 'lucide-react';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/layout/Footer';
 import SeatLayout from '../../components/booking/SeatLayout';
-import { Seat, Schedule, Bus, Route } from '../../types';
-import {  mockRoutes, mockBuses } from '../../components/utils/MockData';
+import { Seat, Schedule, Bus, Route } from '../../data/types';
 import { fetchSchedules } from '../../apiConfig/Bus';
+import { mockBuses, mockRoutes } from '../../data/MockData';
 
 const BookingPage: React.FC = () => {
   const { scheduleId } = useParams<{ scheduleId: string }>();

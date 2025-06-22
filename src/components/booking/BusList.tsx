@@ -1,23 +1,8 @@
 import React, { useState } from 'react';
 import { ArrowRight, Filter, ChevronsUpDown, Clock, Coffee, Wifi, PlugZap, Snowflake, MapPin } from 'lucide-react';
 import Button from '../ui/Button';
-import { Schedule, Bus, Route } from '../../types';
-
-const busTypes = [
-  { value: 'all', label: 'All Buses' },
-  { value: 'AC', label: 'AC' },
-  { value: 'Non-AC', label: 'Non-AC' },
-  { value: 'Sleeper', label: 'Sleeper' },
-  { value: 'Semi-Sleeper', label: 'Semi-Sleeper' },
-];
-
-const departureTimings = [
-  { value: 'all', label: 'All Timings' },
-  { value: 'morning', label: 'Morning (6AM - 12PM)' },
-  { value: 'afternoon', label: 'Afternoon (12PM - 4PM)' },
-  { value: 'evening', label: 'Evening (4PM - 8PM)' },
-  { value: 'night', label: 'Night (8PM - 6AM)' },
-];
+import { Schedule, Bus, Route } from '../../data/types';
+import { busTypes, departureTimings } from '../../data/MockData';
 
 interface BusListProps {
   schedules: Schedule[];

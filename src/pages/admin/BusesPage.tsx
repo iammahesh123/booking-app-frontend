@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Plus, Edit, Trash2, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
-import { Bus, OrderBy } from '../../types';
+import { Bus, OrderBy } from '../../data/types';
 import api, { busApi } from '../../apiConfig/Bus';
 import Select from 'react-select';
 

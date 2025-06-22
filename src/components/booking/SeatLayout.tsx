@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Info, MapPin } from 'lucide-react';
 import Button from '../ui/Button';
 import Select from '../ui/Select';
-import { Seat, Route } from '../../types';
+import { Seat, Route } from '../../data/types';
 import { fetchCities } from '../../apiConfig/Bus';
 import { useAuth } from '../../context/AuthContext';
 import AuthModal from '../auth/AuthModal';

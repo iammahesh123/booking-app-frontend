@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Plus, Edit, Trash2, Search, ChevronLeft, ChevronRight, ArrowUp, ArrowDown } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
-import { Schedule, Bus, Route, ApiScheduleResponse, OrderBy } from '../../types';
+import { Schedule, Bus, Route, ApiScheduleResponse, OrderBy } from '../../data/types';
 import { busApi, routeApi, scheduleApi } from '../../apiConfig/Bus';
 
 enum ScheduleDuration {
