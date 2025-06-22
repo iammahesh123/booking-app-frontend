@@ -6,6 +6,9 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import HomePage from './pages/HomePage';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import ProfilePage from './pages/customer/ProfilePage';
+import AuthModal from './components/auth/AuthModal';
+import { AuthModalProvider, useAuthModal } from './context/AuthModalContext';
+import PaymentPage from './components/booking/PaymentPage';
 
 // // Authentication routes
 // const LoginPage = React.lazy(() => import('./pages/auth/LoginPage'));
@@ -54,6 +57,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles?: strin
 const App: React.FC = () => {
   return (
     <AuthProvider>
+      <AuthModalProvider>
       <Router>
         <React.Suspense
           fallback={
@@ -62,8 +66,11 @@ const App: React.FC = () => {
             </div>
           }
         >
+
+          <AuthModalWrapper />
           <Routes>
             <Route path="/" element={<HomePage />} />
+            <Route path="/payment" element ={<PaymentPage/>}/>
             <Route path="/search" element={<SearchResultsPage />} />
             {/* <Route path="/profile" element={<PassengerInfoPage />} /> */}
             <Route path="/booking/:scheduleId" element={<BookingPage />} />
@@ -111,7 +118,20 @@ const App: React.FC = () => {
           </Routes>
         </React.Suspense>
       </Router>
+      </AuthModalProvider>
     </AuthProvider>
+  );
+};
+
+const AuthModalWrapper = () => {
+  const { isOpen, type, closeModal, switchType } = useAuthModal();
+  return (
+    <AuthModal
+      isOpen={isOpen}
+      onClose={closeModal}
+      type={type}
+      onSwitchType={switchType}
+    />
   );
 };
 

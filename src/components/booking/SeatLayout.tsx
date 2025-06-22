@@ -5,6 +5,8 @@ import Button from '../ui/Button';
 import Select from '../ui/Select';
 import { Seat, Route } from '../../types';
 import { fetchCities } from '../../apiConfig/Bus';
+import { useAuth } from '../../context/AuthContext';
+import AuthModal from '../auth/AuthModal';
 
 interface SeatLayoutProps {
   scheduleId: number;
@@ -15,6 +17,7 @@ interface SeatLayoutProps {
   onSeatDeselect: (seat: Seat) => void;
   selectedSeats: Seat[];
 }
+
 
 const SeatLayout: React.FC<SeatLayoutProps> = ({
   scheduleId,
@@ -31,7 +34,10 @@ const SeatLayout: React.FC<SeatLayoutProps> = ({
   const [cities, setCities] = useState<Array<{value: string, label: string}>>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authModalType, setAuthModalType] = useState<'login' | 'register'>('login');
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
   // Organize seats into rows
   const seatRows = useMemo(() => {
@@ -110,6 +116,12 @@ const SeatLayout: React.FC<SeatLayoutProps> = ({
   };
 
   const handleProceed = () => {
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      setAuthModalType('login');
+      return;
+    }
+  
     if (selectedSeats.length === 0) {
       alert('Please select at least one seat to proceed.');
       return;
@@ -132,7 +144,27 @@ const SeatLayout: React.FC<SeatLayoutProps> = ({
       totalAmount: finalTotalAmount
     }
   });
-};
+
+  //  navigate(`/payment`, {
+  //     state: {
+  //       selectedSeats,
+  //       date,
+  //       source: sourceStop,
+  //       destination: destinationStop,
+  //       totalAmount: finalTotalAmount
+  //     }
+  //   });
+  };
+
+
+const handleAuthModalClose = () => {
+    setShowAuthModal(false);
+  };
+
+  const handleSwitchAuthType = (type: 'login' | 'register') => {
+    setAuthModalType(type);
+  };
+
 
   const totalAmount = selectedSeats.reduce((sum, seat) => sum + seat.seatPrice, 0);
   const serviceFee = 50;
@@ -161,6 +193,7 @@ const SeatLayout: React.FC<SeatLayoutProps> = ({
   }
 
   return (
+    <>
     <div className="bg-white rounded-lg shadow-md overflow-hidden">
       <div className="p-4 border-b">
         <h3 className="text-lg font-semibold">Select Your Seats</h3>
@@ -379,6 +412,15 @@ const SeatLayout: React.FC<SeatLayoutProps> = ({
         </div>
       </div>
     </div>
+    {showAuthModal && (
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={handleAuthModalClose}
+        type={authModalType}
+        onSwitchType={handleSwitchAuthType}
+      />
+    )}
+    </>
   );
 };
 

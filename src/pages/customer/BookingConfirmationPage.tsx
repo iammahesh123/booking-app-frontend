@@ -4,49 +4,8 @@ import { Check, Download, Bus, MapPin, Calendar, Clock, Users, ArrowLeft } from 
 import Button from '../../components/ui/Button';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/layout/Footer';
+import { BookingDetails } from '../../types';
 import { getBookingDetails } from '../../apiConfig/Bus';
-import { Stop } from '../../types';
-
-interface Passenger {
-  name: string;
-  age: number;
-  gender: string;
-  seatNumber: string;
-}
-
-interface BookingDetails {
-  id: number;
-  bookingCode: string;
-  bus: {
- busName?: string;
-  busNumber?: string;
-  busType: 'AC' | 'NON_AC' | 'SLEEPER' | 'SEMI_SLEEPER';
-  totalSeats: number;
-  busAmenities?: string[];
-  operatorName: string;
-  };
-  route: {
-   id: number;
-     sourceCity: string;
-     destinationCity: string;
-     totalDistance: number;
-     totalDuration: string;
-     stopIds?: number[];
-     stops?: Stop[];
-  };
-  travelDate: string;
-  seats: string[];
-  passengers: Passenger[];
-  fareDetails: {
-    baseFare: number;
-    serviceFee: number;
-    gstAmount: number;
-    totalAmount: number;
-  };
-  status: 'CONFIRMED' | 'PENDING' | 'CANCELLED';
-  createdAt: string;
-}
-
 
 
 const BookingConfirmationPage: React.FC = () => {
@@ -58,22 +17,22 @@ const BookingConfirmationPage: React.FC = () => {
   const [error, setError] = React.useState<string | null>(null);
 
 
-    const formatDate = (dateString: string): string => {
-    const options: Intl.DateTimeFormatOptions = { 
-      year: 'numeric', 
-      month: 'long', 
+  const formatDate = (dateString: string): string => {
+    const options: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: 'long',
       day: 'numeric',
-      timeZone: 'UTC' 
+      timeZone: 'UTC'
     };
     return new Date(dateString).toLocaleDateString('en-US', options);
   };
 
   const formatTime = (timeString: string): string => {
-    const options: Intl.DateTimeFormatOptions = { 
-      hour: '2-digit', 
+    const options: Intl.DateTimeFormatOptions = {
+      hour: '2-digit',
       minute: '2-digit',
       hour12: true,
-      timeZone: 'UTC' 
+      timeZone: 'UTC'
     };
     return new Date(timeString).toLocaleTimeString('en-US', options);
   };
@@ -83,25 +42,50 @@ const BookingConfirmationPage: React.FC = () => {
       setBookingDetails(location.state.bookingDetails);
       setLoading(false);
     } else if (bookingId) {
-      fetchBookingDetails(bookingId);
+      // const bookingData = getBookingDetails(bookingId);
+      // setBookingDetails(bookingData);
     } else {
       setError('No booking information available');
       setLoading(false);
     }
   }, [bookingId, location.state]);
 
-const fetchBookingDetails = async (id: string) => {
-  try {
-    setLoading(true);
-    const data = await getBookingDetails(id);
-    // setBookingDetails(data);
-  } catch (err) {
-    console.error('Failed to fetch booking details:', err);
-    setError('Failed to load booking details. Please try again later.');
-  } finally {
-    setLoading(false);
-  }
-};
+  // const fetchBookingDetails = async (id: string) => {
+  //   try {
+  //     setLoading(true);
+  //     const data = await getBookingDetails(id);
+  //     console.log('Fetched booking details:', data);
+  //     // Map API response to BookingDetails shape
+  //     setBookingDetails({
+  //       ...data,
+  //       bus: {
+  //         busName: data.busName,
+  //         busNumber: data.busNumber,
+  //         busType: data.busType,
+  //         totalSeats: data.totalSeats,
+  //         busAmenities: data.busAmenities,
+  //         operatorName: data.operatorName,
+  //       },
+       
+  //       route: {
+  //       //   ...data.route,
+  //       //   id: 0,
+  //       //   sourceCity: data.route.source,
+  //       //   destinationCity: data.route.destination,
+  //       //   departureTime: data.route.departureTime,
+  //       //   arrivalTime: data.route.arrivalTime,
+  //       //   totalDistance: 100,
+  //       //   totalDuration: "100km",
+  //       //   stops: data.route.stops || [],
+  //       // },
+  //     });
+  //   } catch (err) {
+  //     console.error('Failed to fetch booking details:', err);
+  //     setError('Failed to load booking details. Please try again later.');
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   if (loading) {
     return (
@@ -217,8 +201,8 @@ const fetchBookingDetails = async (id: string) => {
                   <div className="flex items-start space-x-3">
                     <Bus className="h-5 w-5 text-gray-400 mt-0.5" />
                     <div>
-                      <p className="font-medium text-gray-900">{bookingDetails.bus.busName}</p>
-                      <p className="text-sm text-gray-500">{bookingDetails.bus.busNumber}</p>
+                      {/* <p className="font-medium text-gray-900">{bookingDetails.bus.busName}</p>
+                      <p className="text-sm text-gray-500">{bookingDetails.bus.busNumber}</p> */}
                     </div>
                   </div>
                 </div>
@@ -231,14 +215,14 @@ const fetchBookingDetails = async (id: string) => {
                       <MapPin className="h-5 w-5 text-gray-400 mt-0.5" />
                       <div>
                         <p className="text-sm text-gray-500">From</p>
-                        <p className="font-medium text-gray-900">{bookingDetails.route.sourceCity}</p>
+                        <p className="font-medium text-gray-900">{bookingDetails.route?.sourceCity}</p>
                       </div>
                     </div>
                     <div className="flex items-start space-x-3">
                       <MapPin className="h-5 w-5 text-gray-400 mt-0.5" />
                       <div>
                         <p className="text-sm text-gray-500">To</p>
-                        <p className="font-medium text-gray-900">{bookingDetails.route.destinationCity}</p>
+                        <p className="font-medium text-gray-900">{bookingDetails.route?.destinationCity}</p>
                       </div>
                     </div>
                     <div className="flex items-start space-x-3">
@@ -270,7 +254,7 @@ const fetchBookingDetails = async (id: string) => {
                       <div key={index} className="flex items-start space-x-3">
                         <Users className="h-5 w-5 text-gray-400 mt-0.5" />
                         <div>
-                          <p className="font-medium text-gray-900">{passenger.name}</p>
+                          <p className="font-medium text-gray-900">{passenger.passengerName}</p>
                           <p className="text-sm text-gray-500">
                             {passenger.age} years • {passenger.gender} • Seat {passenger.seatNumber}
                           </p>
@@ -286,19 +270,19 @@ const fetchBookingDetails = async (id: string) => {
                   <div className="bg-gray-50 rounded-lg p-4">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500">Base Fare</span>
-                      <span className="text-gray-900">₹{bookingDetails.fareDetails.baseFare}</span>
+                      <span className="text-gray-900">₹{bookingDetails.fareDetails?.baseFare}</span>
                     </div>
                     <div className="flex justify-between text-sm mt-2">
                       <span className="text-gray-500">Service Fee</span>
-                      <span className="text-gray-900">₹{bookingDetails.fareDetails.serviceFee}</span>
+                      <span className="text-gray-900">₹{bookingDetails.fareDetails?.serviceFee}</span>
                     </div>
                     <div className="flex justify-between text-sm mt-2">
                       <span className="text-gray-500">Taxes & GST</span>
-                      <span className="text-gray-900">₹{bookingDetails.fareDetails.gstAmount}</span>
+                      <span className="text-gray-900">₹{bookingDetails.fareDetails?.gstAmount}</span>
                     </div>
                     <div className="border-t border-gray-200 mt-3 pt-3 flex justify-between">
                       <span className="font-medium text-gray-900">Total Amount</span>
-                      <span className="font-medium text-gray-900">₹{bookingDetails.fareDetails.totalAmount}</span>
+                      <span className="font-medium text-gray-900">₹{bookingDetails.fareDetails?.totalAmount}</span>
                     </div>
                   </div>
                 </div>
@@ -308,10 +292,9 @@ const fetchBookingDetails = async (id: string) => {
             <div className="bg-gray-50 px-4 py-5 sm:px-6">
               <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div className="text-sm text-gray-500">
-                  Status: <span className={`font-medium ${
-                    bookingDetails.status === 'CONFIRMED' ? 'text-green-600' : 
-                    bookingDetails.status === 'CANCELLED' ? 'text-red-600' : 'text-yellow-600'
-                  }`}>
+                  Status: <span className={`font-medium ${bookingDetails.status === 'CONFIRMED' ? 'text-green-600' :
+                      bookingDetails.status === 'CANCELLED' ? 'text-red-600' : 'text-yellow-600'
+                    }`}>
                     {bookingDetails.status}
                   </span>
                 </div>
