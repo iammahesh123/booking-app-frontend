@@ -214,6 +214,38 @@ export interface PassengerDTO {
   busId: number;
 }
 
+export interface BookingResponse {
+  id: number;
+  userId: string;
+  bookingDate: string;
+  totalPrice: number;
+  bookingStatus: 'CONFIRMED' | 'PENDING' | 'CANCELLED';
+  paymentStatus: 'PAID' | 'PENDING' | 'FAILED';
+  seatDTOS: Array<{
+    id: number;
+    seatNumber: string;
+    seatType: string;
+    seatStatus: string;
+    seatPrice: number;
+    scheduleId: number;
+  }>;
+  passengerResponseDTOS: Array<{
+    id: number;
+    passengerName: string;
+    age: number;
+    gender: string;
+    seatNumber: string;
+  }>;
+  busName: string;
+  busNumber: string;
+  sourceCity: string;
+  destinationCity: string;
+  departureTime: string;
+  arrivalTime: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface BusBookingDTO {
   id: number;
   userId: string;
@@ -244,6 +276,10 @@ export interface BusBookingDTO {
     departureTime: string;
     arrivalTime: string;
     travelDate: string;
-    stops: any[]; // Define proper Stop interface if needed
+      busName: string;
+  busNumber: string;
+  sourceCity: string;
+  destinationCity: string;
+    stops: any[]; 
   };
 }

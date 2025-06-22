@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-import { ApiScheduleResponse, Bus, BusBooking, BusBookingDTO, OrderBy, Route, Schedule, ScheduleDuration, Seat, SeatStatus, SeatType, User } from '../data/types';
+import { ApiScheduleResponse, Bus, BusBooking, OrderBy, Route, Schedule, ScheduleDuration, Seat, SeatStatus, SeatType, User } from '../data/types';
 
 const API_BASE_URL = 'https://bus-booking-svc-latest.onrender.com';
 // const API_BASE_URL = 'http://localhost:8082';
@@ -382,27 +382,17 @@ export const createPassenger = async (passengerData: PassengerData) => {
  */
 export const createBooking = async (bookingData: {
   userId: string;
+  bookingDate: string;
+  totalPrice: number;
+  bookingStatus: BookingStatus;
+  paymentStatus: PaymentStatus;
   seatIds: number[];
   passengerIds: number[];
   busScheduleId: number;
 }): Promise<BusBooking> => {
   try {
-    const response = await api.post<BusBooking>('/bus-booking', {
-      userId: bookingData.userId,
-      seatIds: bookingData.seatIds,
-      //passengerIds?: bookingData.passengerDetails.map(p => p.id), // Assuming seatNumber is used as passenger ID
-      passengerIds: bookingData.passengerIds, 
-      busScheduleId: bookingData.busScheduleId,
-      bookingDate: new Date().toISOString().split('T')[0], // Today's date
-      bookingStatus: 'CONFIRMED',
-      paymentStatus: 'PAID' // Or 'PENDING' depending on your flow
-    });
-
-    return {
-      ...response.data,
-      seats: response.data.seats || [],
-      passengers: response.data.passengers || []
-    };
+    const response = await api.post<BusBooking>('/bus-booking', bookingData);
+    return response.data;
   } catch (error) {
     console.error('Error creating booking:', error);
     throw new Error('Failed to create booking. Please try again.');
@@ -442,35 +432,31 @@ interface BookingResponse {
 
 export const getBookingDetails = async (bookingId: string) => {
   try {
-  
-    const response = await api.get<BusBookingDTO>(`/bus-booking/${bookingId}`);
+    const response = await api.get(`/bus-booking/${bookingId}`);
     const booking = response.data;
+    
     return {
       id: booking.id,
-      bookingCode: booking.id.toString(),
-       busName: booking.busSchedule?.bus?.name || '',
-        busNumber: booking.busSchedule?.bus?.number || '',
-        busType: booking.busSchedule?.bus?.name || 'NON_AC',
-        totalSeats: booking.busSchedule?.bus?.totalSeats || 0,
-        busAmenities: booking.busSchedule?.bus?.amenities || [],
-        operatorName: booking.busSchedule?.bus?.operator || '',
-      route: {
-        source: booking.busSchedule?.source || '',
-        destination: booking.busSchedule?.destination || '',
-        departureTime: booking.busSchedule?.departureTime || '',
-        arrivalTime: booking.busSchedule?.arrivalTime || ''
-      },
-      travelDate: booking.busSchedule?.travelDate || '',
-      seats: booking.seatIds || [],
-      passengers: booking.passengerIds || [],
-      fareDetails: {
-        baseFare: booking.totalPrice * 0.8, 
-        serviceFee: booking.totalPrice * 0.1,
-        gstAmount: booking.totalPrice * 0.1,
-        totalAmount: booking.totalPrice
-      },
-      status: booking.bookingStatus,
-      createdAt: booking.createdAt
+      bookingNumber: booking.bookingNumber || booking.id.toString(),
+      bookingDate: booking.bookingDate,
+      totalPrice: booking.totalPrice,
+      bookingStatus: booking.bookingStatus,
+      paymentStatus: booking.paymentStatus,
+      busScheduleId: booking.busScheduleId,
+      userId: booking.userId,
+      sourceCity: booking.sourceCity,
+      destinationCity: booking.destinationCity,
+      departureTime: booking.departureTime,
+      arrivalTime: booking.arrivalTime,
+      travelDate: booking.travelDate,
+      busName: booking.busName,
+      busNumber: booking.busNumber,
+      passangers: booking.passengerResponseDTOS?.map((p: any) => ({
+        passengerName: p.passengerName,
+        age: p.age,
+        gender: p.gender,
+        seatNumber: p.seatNumber
+      })) || []
     };
   } catch (error) {
     console.error('Error fetching booking details:', error);
@@ -693,6 +679,26 @@ export const scheduleApi = {
 export const routeApi = {
   getAllRoutes: () => api.get('/bus-route'),
   getRoute: (id: number) => api.get(`/bus-route/${id}`),
+};
+
+export const initiateDemoPayment = async (bookingId: string) => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/api/payment/initiate-demo-payment/${bookingId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error initiating payment:', error);
+    throw error;
+  }
+};
+
+export const confirmDemoPayment = async (bookingId: string) => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/api/payment/confirm-demo-payment/${bookingId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error confirming payment:', error);
+    throw error;
+  }
 };
 
 export default api;

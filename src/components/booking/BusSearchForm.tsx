@@ -12,6 +12,7 @@ interface BusSearchFormProps {
   initialSource?: string;
   initialDestination?: string;
   initialDate?: string;
+  onSearch?: (source: string, destination: string, date: string) => void;
 }
 
 interface City {
@@ -19,7 +20,6 @@ interface City {
   label: string;
 }
 
-// Move formatDate above BusSearchForm so it can be used as a default value
 function formatDate(date: Date): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -32,7 +32,8 @@ const BusSearchForm: React.FC<BusSearchFormProps> = ({
   compact = false,
   initialSource = '',
   initialDestination = '',
-  initialDate = formatDate(new Date())
+  initialDate = formatDate(new Date()),
+   onSearch
 }) => {
   const [cities, setCities] = useState<City[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,6 +41,7 @@ const BusSearchForm: React.FC<BusSearchFormProps> = ({
   const [source, setSource] = useState(initialSource);
   const [destination, setDestination] = useState(initialDestination);
   const [date, setDate] = useState(initialDate);
+  const [isSearching, setIsSearching] = useState(false);
 
   const navigate = useNavigate();
 
@@ -65,9 +67,31 @@ const BusSearchForm: React.FC<BusSearchFormProps> = ({
     loadCities();
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    navigate(`/search?source=${source}&destination=${destination}&date=${date}`);
+    
+    if (!source || !destination || !date) {
+      setError('Please fill all fields');
+      return;
+    }
+
+    setIsSearching(true);
+    setError(null);
+
+    try {
+      if (onSearch) {
+        await onSearch(source, destination, date);
+      } else {
+        // Fallback if onSearch isn't provided
+        navigate(`/search?source=${source}&destination=${destination}&date=${date}`);
+      }
+    } catch (err) {
+      console.error('Error performing search:', err);
+      setError('Failed to search buses. Please try again.');
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   return (
@@ -121,7 +145,7 @@ const BusSearchForm: React.FC<BusSearchFormProps> = ({
             fullWidth
             size={compact ? 'sm' : 'lg'}
             leftIcon={<Search size={compact ? 16 : 18} />}
-            disabled={loading}
+            disabled={loading || isSearching}
           >
             {compact ? 'Search' : 'Search Buses'}
           </Button>
