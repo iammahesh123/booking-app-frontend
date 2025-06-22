@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Plus, Edit, Trash2, Search, MapPin, Clock, ArrowRight, ChevronLeft, ChevronRight, ArrowUp, ArrowDown } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
-import { Route, Stop, OrderBy } from '../../types';
+import { Route, Stop, OrderBy } from '../../data/types';
 import { formatTime } from '../../components/utils/formatTime';
 import { createRoute, createStop, deleteRoute, fetchRoutes, updateRoute, updateStop } from '../../apiConfig/Bus';
 

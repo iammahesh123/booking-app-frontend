@@ -1,8 +1,9 @@
 import axios from 'axios';
-import { ApiScheduleResponse, Bus, BusBooking, BusBookingDTO, OrderBy, Route, Schedule, ScheduleDuration, Seat, SeatStatus, SeatType, User } from '../types';
 
-// const API_BASE_URL = 'https://bus-booking-svc-latest.onrender.com';
-const API_BASE_URL = 'http://localhost:8082';
+import { ApiScheduleResponse, Bus, BusBooking, BusBookingDTO, OrderBy, Route, Schedule, ScheduleDuration, Seat, SeatStatus, SeatType, User } from '../data/types';
+
+const API_BASE_URL = 'https://bus-booking-svc-latest.onrender.com';
+// const API_BASE_URL = 'http://localhost:8082';
 
 const api = axios.create({
   baseURL: API_BASE_URL,

@@ -4,15 +4,15 @@ import { Check, Download, Bus, MapPin, Calendar, Clock, Users, ArrowLeft } from 
 import Button from '../../components/ui/Button';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/layout/Footer';
-import { BookingDetails } from '../../types';
 import { getBookingDetails } from '../../apiConfig/Bus';
-
+import { BookingDetails } from '../../data/types';
 
 const BookingConfirmationPage: React.FC = () => {
   const { bookingId } = useParams<{ bookingId: string }>();
   const location = useLocation();
   const navigate = useNavigate();
   const [bookingDetails, setBookingDetails] = React.useState<BookingDetails | null>(null);
+
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 

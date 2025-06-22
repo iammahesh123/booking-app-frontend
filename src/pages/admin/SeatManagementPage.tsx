@@ -3,7 +3,7 @@ import { Search, Filter, Eye, Calendar, Bus } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
-import { Seat, Schedule, Bus as BusType, Route } from '../../types';
+import { Seat, Schedule, Bus as BusType, Route } from '../../data/types';
 import { fetchAllBuses, fetchAllRoutes, fetchAllSchedules, fetchSeats} from '../../apiConfig/Bus';
 
 const SeatManagementPage: React.FC = () => {

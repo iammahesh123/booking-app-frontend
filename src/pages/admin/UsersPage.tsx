@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Plus, Edit, Trash2, Search, UserPlus } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
-import { User } from '../../types';
-import { mockUsers } from '../../components/utils/MockData';
+import { User } from '../../data/types';
+import { mockUsers } from '../../data/MockData';
 
 const UsersPage: React.FC = () => {
   const [users, setUsers] = useState<User[]>(mockUsers);
