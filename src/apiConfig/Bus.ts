@@ -1,8 +1,8 @@
 import axios from 'axios';
-import { ApiScheduleResponse, Bus, OrderBy, Route, Schedule, ScheduleDuration, Seat, SeatStatus, SeatType, User } from '../types';
+import { ApiScheduleResponse, Bus, BusBooking, BusBookingDTO, OrderBy, Route, Schedule, ScheduleDuration, Seat, SeatStatus, SeatType, User } from '../types';
 
-const API_BASE_URL = 'https://bus-booking-svc-latest.onrender.com';
-// const API_BASE_URL = 'http://localhost:8082';
+// const API_BASE_URL = 'https://bus-booking-svc-latest.onrender.com';
+const API_BASE_URL = 'http://localhost:8082';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -379,16 +379,32 @@ export const createPassenger = async (passengerData: PassengerData) => {
  * @param bookingData Booking details
  * @returns Created booking record
  */
-export const createBooking = async (bookingData: BookingData) => {
+export const createBooking = async (bookingData: {
+  userId: string;
+  seatIds: number[];
+  passengerIds: number[];
+  busScheduleId: number;
+}): Promise<BusBooking> => {
   try {
-    const response = await api.post('/bus-booking', {
-      ...bookingData,
-      bookingDate: new Date(bookingData.bookingDate).toISOString()
+    const response = await api.post<BusBooking>('/bus-booking', {
+      userId: bookingData.userId,
+      seatIds: bookingData.seatIds,
+      //passengerIds?: bookingData.passengerDetails.map(p => p.id), // Assuming seatNumber is used as passenger ID
+      passengerIds: bookingData.passengerIds, 
+      busScheduleId: bookingData.busScheduleId,
+      bookingDate: new Date().toISOString().split('T')[0], // Today's date
+      bookingStatus: 'CONFIRMED',
+      paymentStatus: 'PAID' // Or 'PENDING' depending on your flow
     });
-    return response.data;
+
+    return {
+      ...response.data,
+      seats: response.data.seats || [],
+      passengers: response.data.passengers || []
+    };
   } catch (error) {
     console.error('Error creating booking:', error);
-    throw new Error('Failed to complete booking. Please try again.');
+    throw new Error('Failed to create booking. Please try again.');
   }
 };
 
@@ -425,13 +441,18 @@ interface BookingResponse {
 
 export const getBookingDetails = async (bookingId: string) => {
   try {
-    const response = await api.get(`/bus-booking/${bookingId}`);
-    // Transform backend response to match frontend interface
-    const booking = response.data as BookingResponse;
+  
+    const response = await api.get<BusBookingDTO>(`/bus-booking/${bookingId}`);
+    const booking = response.data;
     return {
       id: booking.id,
-      bookingCode: booking.bookingNumber,
-      bus: booking.busSchedule?.bus || { name: '', number: '' },
+      bookingCode: booking.id.toString(),
+       busName: booking.busSchedule?.bus?.name || '',
+        busNumber: booking.busSchedule?.bus?.number || '',
+        busType: booking.busSchedule?.bus?.name || 'NON_AC',
+        totalSeats: booking.busSchedule?.bus?.totalSeats || 0,
+        busAmenities: booking.busSchedule?.bus?.amenities || [],
+        operatorName: booking.busSchedule?.bus?.operator || '',
       route: {
         source: booking.busSchedule?.source || '',
         destination: booking.busSchedule?.destination || '',
@@ -439,15 +460,10 @@ export const getBookingDetails = async (bookingId: string) => {
         arrivalTime: booking.busSchedule?.arrivalTime || ''
       },
       travelDate: booking.busSchedule?.travelDate || '',
-      seats: booking.seats?.map((seat: Seat) => seat.seatNumber) || [],
-      passengers: booking.passengers?.map((passenger: Passenger) => ({
-        name: passenger.passengerName,
-        age: passenger.age,
-        gender: passenger.gender,
-        seatNumber: passenger.seatNumber
-      })) || [],
+      seats: booking.seatIds || [],
+      passengers: booking.passengerIds || [],
       fareDetails: {
-        baseFare: booking.totalPrice * 0.8, // Example calculation
+        baseFare: booking.totalPrice * 0.8, 
         serviceFee: booking.totalPrice * 0.1,
         gstAmount: booking.totalPrice * 0.1,
         totalAmount: booking.totalPrice

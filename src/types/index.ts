@@ -94,18 +94,6 @@ export enum SeatStatus {
   UNAVAILABLE = 'UNAVAILABLE'
 }
 
-export interface Seat {
-  id: number;
-  seatNumber: string;
-  seatType: SeatType;
-  seatStatus: SeatStatus;
-  seatPrice: number;
-  scheduleId: number;
-  createdAt?: string;
-  updatedAt?: string;
-  updatedBy?: string;
-  createdBy?: string;
-}
 
 export enum OrderBy {
   ASC = 'ASC',
@@ -126,13 +114,6 @@ export interface Booking {
   bookingCode: string;
 }
 
-export interface Passenger {
-  name: string;
-  age: number;
-  gender: 'male' | 'female' | 'other';
-  seatNumber: string;
-}
-
 export interface PopularRoute {
   source: string;
   destination: string;
@@ -144,4 +125,125 @@ export interface BookingSummary {
   totalRevenue: number;
   cancelledBookings: number;
   upcomingBookings: number;
+}
+
+// types.ts (or wherever you define your interfaces)
+export interface Seat {
+  id: number;
+  seatNumber: string;
+  seatType: 'LOWER' | 'UPPER' | 'SLEEPER' | 'SEATER'; // Adjust based on your SeatType enum
+  seatStatus: 'AVAILABLE' | 'BOOKED' | 'BLOCKED'; // Adjust based on your SeatStatus enum
+  seatPrice: number;
+}
+
+export interface Passenger {
+  id: number;
+  passengerName: string;
+  age: number;
+  gender: string;
+  seatNumber: string;
+}
+
+export interface BusBooking {
+  id: number;
+  userId: string;
+  bookingDate: string;
+  totalPrice: number;
+  bookingStatus: 'CONFIRMED' | 'PENDING' | 'CANCELLED'; 
+  paymentStatus: 'PAID' | 'PENDING' | 'FAILED'; 
+  seats: Seat[];
+  passengers: Passenger[];
+  createdAt: string;
+  updatedAt: string;
+  busScheduleId: number;
+}
+
+export interface BookingDetails {
+  id: number;
+  bookingCode: string;
+  bus: {
+    busName: string;
+    busNumber: string;
+    busType: 'AC' | 'NON_AC' | 'SLEEPER' | 'SEMI_SLEEPER' | string;
+    totalSeats: number;
+    busAmenities: string[];
+    operatorName: string;
+  };
+  route: {
+    id: number;
+    sourceCity: string;
+    destinationCity: string;
+    totalDistance: number;
+    totalDuration: string;
+    departureTime: string;
+    arrivalTime: string;
+    stops: Stop[];
+  };
+  travelDate: string;
+  seats: string[];
+  passengers: Passenger[];
+  fareDetails: {
+    baseFare: number;
+    serviceFee: number;
+    gstAmount: number;
+    totalAmount: number;
+  };
+  status: 'CONFIRMED' | 'PENDING' | 'CANCELLED';
+  createdAt: string;
+}
+
+
+// types.ts (or wherever you define your interfaces)
+export interface SeatDTO {
+  id: number;
+  seatNumber: string;
+  seatType: 'LOWER' | 'UPPER' | 'SLEEPER' | 'SEATER'; // Adjust based on your SeatType enum
+  seatStatus: 'AVAILABLE' | 'BOOKED' | 'BLOCKED'; // Adjust based on your SeatStatus enum
+  seatPrice: number;
+  scheduleId: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PassengerDTO {
+  id: number;
+  passengerName: string;
+  age: number;
+  gender: string;
+  seatNumber: string;
+  busId: number;
+}
+
+export interface BusBookingDTO {
+  id: number;
+  userId: string;
+  bookingDate: string; // or Date if you prefer
+  totalPrice: number;
+  bookingStatus: 'CONFIRMED' | 'PENDING' | 'CANCELLED';
+  paymentStatus: 'PAID' | 'PENDING' | 'FAILED';
+  seatIds: string[];
+  passengerIds: string[];
+  createdAt: string;
+  updatedAt: string;
+  updatedBy: string;
+  createdBy: string;
+  busSchedule?: {
+    id: number;
+    bus: {
+      name: string;
+      number: string;
+      type: string;
+      totalSeats: number;
+      amenities: string[];
+      operator: string;
+    };
+    source: string;
+    destination: string;
+    distance: number;
+    duration: string;
+    departureTime: string;
+    arrivalTime: string;
+    travelDate: string;
+    stops: any[]; // Define proper Stop interface if needed
+  };
 }

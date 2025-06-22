@@ -3,14 +3,16 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Bus, Menu, X, LogOut, User, Home } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.tsx';
 import Button from '../ui/Button.tsx';
+import { useAuthModal } from '../../context/AuthModalContext.tsx';
 
 interface NavbarProps {
-  onLoginClick?: () => void;
-  onRegisterClick?: () => void;
+  // onLoginClick?: () => void;
+  // onRegisterClick?: () => void;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ onLoginClick, onRegisterClick }) => {
+const Navbar: React.FC<NavbarProps> = () => {
   const { user, logout, isAuthenticated } = useAuth();
+  const { openModal } = useAuthModal();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -94,14 +96,14 @@ const Navbar: React.FC<NavbarProps> = ({ onLoginClick, onRegisterClick }) => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={onLoginClick}
+                    onClick={() => openModal('login')}
                   >
                     Login
                   </Button>
                   <Button
                     variant="primary"
                     size="sm"
-                    onClick={onRegisterClick}
+                    onClick={() => openModal('register')}
                   >
                     Register
                   </Button>
@@ -168,20 +170,14 @@ const Navbar: React.FC<NavbarProps> = ({ onLoginClick, onRegisterClick }) => {
                 <Button
                   variant="outline"
                   fullWidth
-                  onClick={() => {
-                    if (onLoginClick) onLoginClick();
-                    setIsMenuOpen(false);
-                  }}
+                  onClick={() => openModal('login')}
                 >
                   Login
                 </Button>
                 <Button
                   variant="primary"
                   fullWidth
-                  onClick={() => {
-                    if (onRegisterClick) onRegisterClick();
-                    setIsMenuOpen(false);
-                  }}
+                  onClick={() => openModal('register')}
                 >
                   Register
                 </Button>

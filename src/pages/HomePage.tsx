@@ -18,17 +18,7 @@ const HomePage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar
-        onLoginClick={() => {
-          setAuthModalType('login');
-          setIsAuthModalOpen(true);
-        }}
-        onRegisterClick={() => {
-          setAuthModalType('register');
-          setIsAuthModalOpen(true);
-        }}
-      />
-
+      <Navbar/>
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}

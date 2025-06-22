@@ -120,21 +120,20 @@ const PassengerInfoPage: React.FC = () => {
 
       const bookingResponse = await createBooking(bookingData);
       
-      // Navigate to confirmation page with booking details
-      navigate(`/booking/confirmation/${bookingResponse.id}`, {
+      // Navigate to payment page with all necessary details
+      navigate('/payment', {
         state: {
-          bookingDetails: {
-            ...bookingResponse,
-            passengers: passengers.map((p, i) => ({
-              ...p,
-              seatNumber: state.selectedSeats[i].seatNumber,
-              seatPrice: state.selectedSeats[i].seatPrice
-            })),
-            source: state.source,
-            destination: state.destination,
-            date: state.date,
-            totalAmount: state.totalAmount
-          }
+          bookingId: bookingResponse.id,
+          passengers: passengers.map((p, i) => ({
+            ...p,
+            seatNumber: state.selectedSeats[i].seatNumber,
+            seatPrice: state.selectedSeats[i].seatPrice
+          })),
+          selectedSeats: state.selectedSeats,
+          date: state.date,
+          source: state.source,
+          destination: state.destination,
+          totalAmount: state.totalAmount
         }
       });
     } catch (err) {

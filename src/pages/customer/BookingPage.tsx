@@ -48,9 +48,6 @@ const BookingPage: React.FC = () => {
               }
               setRoute(foundRoute || null);
 
-              // Generate seats for this schedule
-              // const generatedSeats = generateSeats(scheduleId);
-              // setSeats(generatedSeats);
             } else {
               setError('Schedule not found.');
             }
