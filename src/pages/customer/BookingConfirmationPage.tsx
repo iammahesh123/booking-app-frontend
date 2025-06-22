@@ -5,87 +5,63 @@ import Button from '../../components/ui/Button';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/layout/Footer';
 import { getBookingDetails } from '../../apiConfig/Bus';
-import { BookingDetails } from '../../data/types';
+
+
 
 const BookingConfirmationPage: React.FC = () => {
   const { bookingId } = useParams<{ bookingId: string }>();
   const location = useLocation();
   const navigate = useNavigate();
-  const [bookingDetails, setBookingDetails] = React.useState<BookingDetails | null>(null);
-
+  const [bookingDetails, setBookingDetails] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
-
 
   const formatDate = (dateString: string): string => {
     const options: Intl.DateTimeFormatOptions = {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
-      timeZone: 'UTC'
     };
     return new Date(dateString).toLocaleDateString('en-US', options);
   };
 
+  console.log("Booking details:", bookingDetails);
+
   const formatTime = (timeString: string): string => {
-    const options: Intl.DateTimeFormatOptions = {
+    if (!timeString) return '';
+    const [hours, minutes] = timeString.split(':');
+    const date = new Date();
+    date.setHours(parseInt(hours, 10));
+    date.setMinutes(parseInt(minutes, 10));
+    
+    return date.toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
-      hour12: true,
-      timeZone: 'UTC'
-    };
-    return new Date(timeString).toLocaleTimeString('en-US', options);
+      hour12: true
+    });
   };
 
   React.useEffect(() => {
-    if (location.state?.bookingDetails) {
-      setBookingDetails(location.state.bookingDetails);
-      setLoading(false);
-    } else if (bookingId) {
-      // const bookingData = getBookingDetails(bookingId);
-      // setBookingDetails(bookingData);
-    } else {
-      setError('No booking information available');
-      setLoading(false);
-    }
-  }, [bookingId, location.state]);
+    const fetchBooking = async () => {
+      try {
+        if (bookingId) {
+          const data = await getBookingDetails(bookingId);
+          setBookingDetails(data);
+        } else if (location.state?.bookingDetails) {
+          setBookingDetails(location.state.bookingDetails);
+        } else {
+          setError('No booking information available');
+        }
+      } catch (err) {
+        setError('Failed to load booking details. Please try again later.');
+        console.error('Error fetching booking:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // const fetchBookingDetails = async (id: string) => {
-  //   try {
-  //     setLoading(true);
-  //     const data = await getBookingDetails(id);
-  //     console.log('Fetched booking details:', data);
-  //     // Map API response to BookingDetails shape
-  //     setBookingDetails({
-  //       ...data,
-  //       bus: {
-  //         busName: data.busName,
-  //         busNumber: data.busNumber,
-  //         busType: data.busType,
-  //         totalSeats: data.totalSeats,
-  //         busAmenities: data.busAmenities,
-  //         operatorName: data.operatorName,
-  //       },
-       
-  //       route: {
-  //       //   ...data.route,
-  //       //   id: 0,
-  //       //   sourceCity: data.route.source,
-  //       //   destinationCity: data.route.destination,
-  //       //   departureTime: data.route.departureTime,
-  //       //   arrivalTime: data.route.arrivalTime,
-  //       //   totalDistance: 100,
-  //       //   totalDuration: "100km",
-  //       //   stops: data.route.stops || [],
-  //       // },
-  //     });
-  //   } catch (err) {
-  //     console.error('Failed to fetch booking details:', err);
-  //     setError('Failed to load booking details. Please try again later.');
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
+    fetchBooking();
+  }, [bookingId, location.state]);
 
   if (loading) {
     return (
@@ -168,10 +144,10 @@ const BookingConfirmationPage: React.FC = () => {
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                   <h3 className="text-lg font-medium text-gray-900">
-                    Booking ID: {bookingDetails.bookingCode}
+                    Booking ID: {bookingDetails.id}
                   </h3>
                   <p className="mt-1 text-sm text-gray-500">
-                    Booked on {formatDate(bookingDetails.createdAt)} at {formatTime(bookingDetails.createdAt)}
+                    Booked on {formatDate(bookingDetails.createdAt)}
                   </p>
                 </div>
                 <div className="flex gap-3">
@@ -201,8 +177,8 @@ const BookingConfirmationPage: React.FC = () => {
                   <div className="flex items-start space-x-3">
                     <Bus className="h-5 w-5 text-gray-400 mt-0.5" />
                     <div>
-                      {/* <p className="font-medium text-gray-900">{bookingDetails.bus.busName}</p>
-                      <p className="text-sm text-gray-500">{bookingDetails.bus.busNumber}</p> */}
+                      <p className="font-medium text-gray-900">{bookingDetails.busName}</p>
+                      <p className="text-sm text-gray-500">{bookingDetails.busNumber}</p>
                     </div>
                   </div>
                 </div>
@@ -215,14 +191,14 @@ const BookingConfirmationPage: React.FC = () => {
                       <MapPin className="h-5 w-5 text-gray-400 mt-0.5" />
                       <div>
                         <p className="text-sm text-gray-500">From</p>
-                        <p className="font-medium text-gray-900">{bookingDetails.route?.sourceCity}</p>
+                        <p className="font-medium text-gray-900">{bookingDetails.sourceCity}</p>
                       </div>
                     </div>
                     <div className="flex items-start space-x-3">
                       <MapPin className="h-5 w-5 text-gray-400 mt-0.5" />
                       <div>
                         <p className="text-sm text-gray-500">To</p>
-                        <p className="font-medium text-gray-900">{bookingDetails.route?.destinationCity}</p>
+                        <p className="font-medium text-gray-900">{bookingDetails.destinationCity}</p>
                       </div>
                     </div>
                     <div className="flex items-start space-x-3">
@@ -230,7 +206,7 @@ const BookingConfirmationPage: React.FC = () => {
                       <div>
                         <p className="text-sm text-gray-500">Date</p>
                         <p className="font-medium text-gray-900">
-                          {formatDate(bookingDetails.travelDate)}
+                          {formatDate(bookingDetails.bookingDate)}
                         </p>
                       </div>
                     </div>
@@ -239,7 +215,7 @@ const BookingConfirmationPage: React.FC = () => {
                       <div>
                         <p className="text-sm text-gray-500">Time</p>
                         <p className="font-medium text-gray-900">
-                          {/* {formatTime(bookingDetails.route.departureTime)} - {formatTime(bookingDetails.route.arrivalTime)} */}
+                          {formatTime(bookingDetails.departureTime)} - {formatTime(bookingDetails.arrivalTime)}
                         </p>
                       </div>
                     </div>
@@ -250,7 +226,7 @@ const BookingConfirmationPage: React.FC = () => {
                 <div className="border-b border-gray-200 pb-6">
                   <h4 className="text-sm font-medium text-gray-500 mb-4">Passenger Details</h4>
                   <div className="space-y-4">
-                    {bookingDetails.passengers.map((passenger, index) => (
+                    {bookingDetails.passangers?.map((passenger: any, index: number) => (
                       <div key={index} className="flex items-start space-x-3">
                         <Users className="h-5 w-5 text-gray-400 mt-0.5" />
                         <div>
@@ -270,19 +246,19 @@ const BookingConfirmationPage: React.FC = () => {
                   <div className="bg-gray-50 rounded-lg p-4">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500">Base Fare</span>
-                      <span className="text-gray-900">₹{bookingDetails.fareDetails?.baseFare}</span>
+                      <span className="text-gray-900">₹{bookingDetails.totalPrice * 0.8}</span>
                     </div>
                     <div className="flex justify-between text-sm mt-2">
                       <span className="text-gray-500">Service Fee</span>
-                      <span className="text-gray-900">₹{bookingDetails.fareDetails?.serviceFee}</span>
+                      <span className="text-gray-900">₹{bookingDetails.totalPrice * 0.1}</span>
                     </div>
                     <div className="flex justify-between text-sm mt-2">
                       <span className="text-gray-500">Taxes & GST</span>
-                      <span className="text-gray-900">₹{bookingDetails.fareDetails?.gstAmount}</span>
+                      <span className="text-gray-900">₹{bookingDetails.totalPrice * 0.1}</span>
                     </div>
                     <div className="border-t border-gray-200 mt-3 pt-3 flex justify-between">
                       <span className="font-medium text-gray-900">Total Amount</span>
-                      <span className="font-medium text-gray-900">₹{bookingDetails.fareDetails?.totalAmount}</span>
+                      <span className="font-medium text-gray-900">₹{bookingDetails.totalPrice}</span>
                     </div>
                   </div>
                 </div>
@@ -292,10 +268,11 @@ const BookingConfirmationPage: React.FC = () => {
             <div className="bg-gray-50 px-4 py-5 sm:px-6">
               <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div className="text-sm text-gray-500">
-                  Status: <span className={`font-medium ${bookingDetails.status === 'CONFIRMED' ? 'text-green-600' :
-                      bookingDetails.status === 'CANCELLED' ? 'text-red-600' : 'text-yellow-600'
-                    }`}>
-                    {bookingDetails.status}
+                  Status: <span className={`font-medium ${
+                    bookingDetails.bookingStatus === 'CONFIRMED' ? 'text-green-600' :
+                    bookingDetails.bookingStatus === 'CANCELLED' ? 'text-red-600' : 'text-yellow-600'
+                  }`}>
+                    {bookingDetails.bookingStatus}
                   </span>
                 </div>
                 <div className="flex gap-3">

@@ -5,6 +5,7 @@ import Input from '../ui/Input';
 import Navbar from '../layout/Navbar';
 import Footer from '../layout/Footer';
 import { useState } from 'react';
+import { confirmDemoPayment, initiateDemoPayment } from '../../apiConfig/Bus';
 // import { updateBookingPaymentStatus } from '../../apiConfig/Bus';
 
 interface Seat {
@@ -76,57 +77,57 @@ const PaymentPage: React.FC = () => {
         setCardDetails(prev => ({ ...prev, [name]: value }));
     };
 
-    const handlePayment = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setIsProcessing(true);
-        setError(null);
+const handlePayment = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setIsProcessing(true);
+  setError(null);
 
-        // Basic validation
-        if (!cardDetails.number || !cardDetails.name || !cardDetails.expiry || !cardDetails.cvc) {
-            setError('Please fill in all card details.');
-            setIsProcessing(false);
-            return;
+  // Basic validation (keep your existing validation)
+  if (!cardDetails.number || !cardDetails.name || !cardDetails.expiry || !cardDetails.cvc) {
+    setError('Please fill in all card details.');
+    setIsProcessing(false);
+    return;
+  }
+
+  try {
+    // Step 1: Initiate payment (optional for demo, but follows your backend flow)
+    await initiateDemoPayment(bookingId);
+
+    // Simulate payment processing (or remove if you want instant confirmation)
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    // Step 2: Confirm payment with backend
+    const paymentResult = await confirmDemoPayment(bookingId);
+    
+    // if (paymentResult.status !== 'success') {
+    //   throw new Error(paymentResult.message || 'Payment confirmation failed');
+    // }
+
+    // On successful payment, redirect to confirmation page
+    navigate(`/booking/confirmation/${bookingId}`, {
+      state: {
+        bookingDetails: {
+          id: bookingId,
+          passengers,
+          selectedSeats,
+          date,
+          source,
+          destination,
+          totalAmount,
+          paymentMethod: 'Credit Card',
+          cardLastFour: cardDetails.number.slice(-4),
+          paymentDate: new Date().toISOString(),
+          paymentId: paymentResult.razorpayPaymentId // Add if available
         }
-
-        // Validate card number (simple check for demo)
-        if (cardDetails.number.replace(/\s/g, '').length !== 16) {
-            setError('Please enter a valid 16-digit card number');
-            setIsProcessing(false);
-            return;
-        }
-
-        try {
-            // Simulate payment processing
-            await new Promise(resolve => setTimeout(resolve, 2000));
-
-            // Update booking payment status in backend
-            //   await updateBookingPaymentStatus(bookingId, 'PAID');
-
-            // On successful payment, redirect to confirmation page
-            navigate(`/booking/confirmation/${bookingId}`, {
-                state: {
-                    bookingDetails: {
-                        id: bookingId,
-                        passengers,
-                        selectedSeats,
-                        date,
-                        source,
-                        destination,
-                        totalAmount,
-                        paymentMethod: 'Credit Card',
-                        cardLastFour: cardDetails.number.slice(-4),
-                        paymentDate: new Date().toISOString()
-                    }
-                }
-            });
-        } catch (err) {
-            console.error('Payment failed:', err);
-            setError('Payment failed. Please try again or use a different payment method.');
-        } finally {
-            setIsProcessing(false);
-        }
-    };
-
+      }
+    });
+  } catch (err) {
+    console.error('Payment failed:', err);
+    setError(err.message || 'Payment failed. Please try again or use a different payment method.');
+  } finally {
+    setIsProcessing(false);
+  }
+};
     return (
         <>
             <Navbar />

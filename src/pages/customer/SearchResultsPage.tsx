@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/layout/Footer';
 import BusSearchForm from '../../components/booking/BusSearchForm';
@@ -10,11 +10,12 @@ import { busApi, fetchRoutes, fetchSchedules, fetchSeats } from '../../apiConfig
 
 const SearchResultsPage: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const queryParams = new URLSearchParams(location.search);
 
-  const [source] = useState(queryParams.get('source') || '');
-  const [destination] = useState(queryParams.get('destination') || '');
-  const [date] = useState(queryParams.get('date') || formatCurrentDate());
+  const [source, setSource] = useState(queryParams.get('source') || '');
+  const [destination, setDestination] = useState(queryParams.get('destination') || '');
+  const [date, setDate] = useState(queryParams.get('date') || formatCurrentDate());
 
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -31,22 +32,38 @@ const SearchResultsPage: React.FC = () => {
     return `${year}-${month}-${day}`;
   }
 
-  const handleSeatView = async (schedule: Schedule) => {
-  setIsLoading(true);
-  try {
-    const seats = await fetchSeats(schedule.id);
-    const updatedSchedule: Schedule = { 
-      ...schedule, 
-      seats: seats 
-    };
-    setSelectedSchedule(updatedSchedule);
+  const handleSearch = (newSource: string, newDestination: string, newDate: string) => {
+    // Update the state
+    setSource(newSource);
+    setDestination(newDestination);
+    setDate(newDate);
+    
+    // Update the URL
+    navigate(`/search?source=${newSource}&destination=${newDestination}&date=${newDate}`, {
+      replace: true
+    });
+    
+    // Reset the selected schedule when a new search is performed
+    setSelectedSchedule(null);
     setSelectedSeats([]);
-  } catch (error) {
-    console.error('Error loading seats:', error);
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
+
+  const handleSeatView = async (schedule: Schedule) => {
+    setIsLoading(true);
+    try {
+      const seats = await fetchSeats(schedule.id);
+      const updatedSchedule: Schedule = { 
+        ...schedule, 
+        seats: seats 
+      };
+      setSelectedSchedule(updatedSchedule);
+      setSelectedSeats([]);
+    } catch (error) {
+      console.error('Error loading seats:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSeatSelect = (seat: Seat) => {
     setSelectedSeats(prev => [...prev, seat]);
@@ -56,6 +73,10 @@ const SearchResultsPage: React.FC = () => {
     setSelectedSeats(prev => prev.filter(s => s.id !== seat.id));
   };
 
+  const handleBackToResults = () => {
+    setSelectedSchedule(null);
+    setSelectedSeats([]);
+  };
 
   useEffect(() => {
     const loadData = async () => {
@@ -92,6 +113,7 @@ const SearchResultsPage: React.FC = () => {
               initialSource={source}
               initialDestination={destination}
               initialDate={date}
+              onSearch={handleSearch}
             />
           </div>
 
@@ -109,7 +131,7 @@ const SearchResultsPage: React.FC = () => {
               onSeatSelect={handleSeatSelect}
               onSeatDeselect={handleSeatDeselect}
               selectedSeats={selectedSeats}
-              //onBack={handleBackToResults}
+              // onBack={handleBackToResults}
             />
           ) : (
             <BusList
