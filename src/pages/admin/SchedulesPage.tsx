@@ -12,7 +12,8 @@ enum ScheduleDuration {
   FOUR_MONTHS = 'FOUR_MONTHS'
 }
 
-const LoadingSpinner: React.FC<{ size?: 'small' | 'medium' | 'large' }> = ({ size = 'medium' }) => {
+// Reusable components
+const LoadingSpinner = ({ size = 'medium' }: { size?: 'small' | 'medium' | 'large' }) => {
   const sizes = {
     small: 'h-5 w-5',
     medium: 'h-8 w-8',
@@ -21,62 +22,56 @@ const LoadingSpinner: React.FC<{ size?: 'small' | 'medium' | 'large' }> = ({ siz
 
   return (
     <div className="flex justify-center items-center">
-      <div
-        className={`animate-spin rounded-full border-t-2 border-b-2 border-primary ${sizes[size]}`}
-      ></div>
+      <div className={`animate-spin rounded-full border-t-2 border-b-2 border-primary ${sizes[size]}`} />
     </div>
   );
 };
 
-const ErrorMessage: React.FC<{ message: string; onRetry?: () => void }> = ({ message, onRetry }) => {
-  return (
-    <div className="rounded-md bg-red-50 p-4">
-      <div className="flex">
-        <div className="flex-shrink-0">
-          <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-            <path
-              fillRule="evenodd"
-              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-              clipRule="evenodd"
-            />
-          </svg>
-        </div>
-        <div className="ml-3">
-          <h3 className="text-sm font-medium text-red-800">{message}</h3>
-          {onRetry && (
-            <div className="mt-2">
-              <button
-                onClick={onRetry}
-                className="text-sm font-medium text-red-800 hover:text-red-700"
-              >
-                Retry <span aria-hidden="true">&rarr;</span>
-              </button>
-            </div>
-          )}
-        </div>
+const ErrorMessage = ({ message, onRetry }: { message: string; onRetry?: () => void }) => (
+  <div className="rounded-md bg-red-50 p-4">
+    <div className="flex items-start">
+      <div className="flex-shrink-0">
+        <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+          <path
+            fillRule="evenodd"
+            d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+            clipRule="evenodd"
+          />
+        </svg>
+      </div>
+      <div className="ml-3">
+        <h3 className="text-sm font-medium text-red-800">{message}</h3>
+        {onRetry && (
+          <div className="mt-2">
+            <button
+              onClick={onRetry}
+              className="text-sm font-medium text-red-800 hover:text-red-700"
+            >
+              Retry <span aria-hidden="true">&rarr;</span>
+            </button>
+          </div>
+        )}
       </div>
     </div>
-  );
-};
+  </div>
+);
 
-const mapApiResponseToSchedule = (apiResponse: ApiScheduleResponse): Schedule => {
-  return {
-    id: apiResponse.id,
-    busId: apiResponse.busResponseDTO?.id || 0,
-    routeId: apiResponse.routeResponseDTO?.id || 0,
-    departureTime: apiResponse.departureTime,
-    arrivalTime: apiResponse.arrivalTime,
-    scheduleDate: apiResponse.scheduleDate,
-    totalSeats: apiResponse.totalSeats,
-    farePrice: apiResponse.farePrice,
-    automationDuration: apiResponse.automationDuration,
-    isMasterRecord: apiResponse.isMasterRecord,
-    createdAt: apiResponse.createdAt,
-    updatedAt: apiResponse.updatedAt,
-    updatedBy: apiResponse.updatedBy,
-    createdBy: apiResponse.createdBy
-  };
-};
+const mapApiResponseToSchedule = (apiResponse: ApiScheduleResponse): Schedule => ({
+  id: apiResponse.id,
+  busId: apiResponse.busResponseDTO?.id || 0,
+  routeId: apiResponse.routeResponseDTO?.id || 0,
+  departureTime: apiResponse.departureTime,
+  arrivalTime: apiResponse.arrivalTime,
+  scheduleDate: apiResponse.scheduleDate,
+  totalSeats: apiResponse.totalSeats,
+  farePrice: apiResponse.farePrice,
+  automationDuration: apiResponse.automationDuration,
+  isMasterRecord: apiResponse.isMasterRecord,
+  createdAt: apiResponse.createdAt,
+  updatedAt: apiResponse.updatedAt,
+  updatedBy: apiResponse.updatedBy,
+  createdBy: apiResponse.createdBy
+});
 
 const SchedulesPage: React.FC = () => {
   // State management
@@ -110,7 +105,19 @@ const SchedulesPage: React.FC = () => {
   const [sortColumn, setSortColumn] = useState<string>('id');
   const [orderBy, setOrderBy] = useState<OrderBy>(OrderBy.ASC);
 
-  // Memoized fetch function
+  // Mobile view state
+  const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileView(window.innerWidth < 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Fetch data
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
@@ -125,10 +132,7 @@ const SchedulesPage: React.FC = () => {
         routeApi.getAllRoutes()
       ]);
 
-      const mappedSchedules = schedulesRes.data.data.map((apiSchedule: ApiScheduleResponse) =>
-        mapApiResponseToSchedule(apiSchedule)
-      );
-
+      const mappedSchedules = schedulesRes.data.data.map(mapApiResponseToSchedule);
       setSchedules(mappedSchedules);
       setBuses(busesRes);
       setRoutes(routesRes.data.data);
@@ -143,31 +147,20 @@ const SchedulesPage: React.FC = () => {
     }
   }, [currentPage, itemsPerPage, sortColumn, orderBy]);
 
-  // Fetch data on component mount and when dependencies change
   useEffect(() => {
-    const controller = new AbortController();
-    
     fetchData();
-
-    return () => {
-      controller.abort();
-    };
   }, [fetchData]);
 
   // Helper functions
-const getBusDetails = (busId: number): Bus | undefined => {
-  if (!Array.isArray(buses)) {
-    console.error('buses is not an array:', buses);
-    return undefined;
-  }
-  return buses.find(bus => Number(bus.id) === Number(busId));
-};
+  const getBusDetails = (busId: number): Bus | undefined => {
+    return buses.find(bus => Number(bus.id) === Number(busId));
+  };
 
   const getRouteDetails = (routeId: number): Route | undefined => {
     return routes.find(route => route.id === routeId);
   };
 
-  // Memoized filtered schedules
+  // Filtered and sorted schedules
   const filteredSchedules = useMemo(() => {
     const searchLower = searchTerm.toLowerCase();
     return schedules.filter(schedule => {
@@ -199,21 +192,9 @@ const getBusDetails = (busId: number): Bus | undefined => {
   };
 
   // Pagination controls
-  const goToPage = (page: number) => {
-    setCurrentPage(page);
-  };
-
-  const goToNextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
-    }
-  };
-
-  const goToPreviousPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    }
-  };
+  const goToPage = (page: number) => setCurrentPage(page);
+  const goToNextPage = () => currentPage < totalPages && setCurrentPage(currentPage + 1);
+  const goToPreviousPage = () => currentPage > 1 && setCurrentPage(currentPage - 1);
 
   // CRUD operations
   const handleAddSchedule = async () => {
@@ -301,19 +282,17 @@ const getBusDetails = (busId: number): Bus | undefined => {
   };
 
   // Form validation
-  const isFormValid = useMemo(() => {
-    return (
-      formData.busId > 0 &&
-      formData.routeId > 0 &&
-      formData.scheduleDate &&
-      formData.departureTime &&
-      formData.arrivalTime &&
-      formData.totalSeats > 0 &&
-      formData.farePrice > 0
-    );
-  }, [formData]);
+  const isFormValid = useMemo(() => (
+    formData.busId > 0 &&
+    formData.routeId > 0 &&
+    formData.scheduleDate &&
+    formData.departureTime &&
+    formData.arrivalTime &&
+    formData.totalSeats > 0 &&
+    formData.farePrice > 0
+  ), [formData]);
 
-  // Render loading or error states
+  // Loading and error states
   if (loading && schedules.length === 0) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -330,22 +309,201 @@ const getBusDetails = (busId: number): Bus | undefined => {
     );
   }
 
+  // Render mobile card view
+  const renderMobileCard = (schedule: Schedule) => {
+    const bus = getBusDetails(schedule.busId);
+    const route = getRouteDetails(schedule.routeId);
+
+    return (
+      <div key={schedule.id} className="bg-white p-4 rounded-lg shadow mb-4">
+        <div className="flex justify-between items-start">
+          <div>
+            <h3 className="font-medium text-gray-900">{bus?.busName}</h3>
+            <p className="text-sm text-gray-500">
+              {route ? `${route.sourceCity} → ${route.destinationCity}` : 'Route not assigned'}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => handleEditClick(schedule)}
+              className="text-primary hover:text-primary-dark"
+              disabled={loading}
+              aria-label="Edit schedule"
+            >
+              <Edit className="h-5 w-5" />
+            </button>
+            <button
+              onClick={() => handleDeleteSchedule(schedule.id)}
+              className="text-red-600 hover:text-red-900"
+              disabled={loading}
+              aria-label="Delete schedule"
+            >
+              <Trash2 className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+          <div>
+            <p className="text-gray-500">Date</p>
+            <p>{new Date(schedule.scheduleDate).toLocaleDateString()}</p>
+          </div>
+          <div>
+            <p className="text-gray-500">Time</p>
+            <p>{schedule.departureTime} - {schedule.arrivalTime}</p>
+          </div>
+          <div>
+            <p className="text-gray-500">Seats</p>
+            <p>{schedule.totalSeats} available</p>
+          </div>
+          <div>
+            <p className="text-gray-500">Fare</p>
+            <p className="font-medium">₹{schedule.farePrice.toLocaleString()}</p>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Render desktop table view
+  const renderDesktopTable = () => (
+    <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+      <div className="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
+        <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+          <table className="min-w-full divide-y divide-gray-300">
+            <thead className="bg-gray-50">
+              <tr>
+                <th
+                  scope="col"
+                  className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 cursor-pointer"
+                  onClick={() => handleSort('busName')}
+                >
+                  <div className="flex items-center">
+                    Bus & Route
+                    {renderSortIndicator('busName')}
+                  </div>
+                </th>
+                <th
+                  scope="col"
+                  className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 cursor-pointer"
+                  onClick={() => handleSort('scheduleDate')}
+                >
+                  <div className="flex items-center">
+                    Date
+                    {renderSortIndicator('scheduleDate')}
+                  </div>
+                </th>
+                <th
+                  scope="col"
+                  className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 cursor-pointer"
+                  onClick={() => handleSort('departureTime')}
+                >
+                  <div className="flex items-center">
+                    Time
+                    {renderSortIndicator('departureTime')}
+                  </div>
+                </th>
+                <th
+                  scope="col"
+                  className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 cursor-pointer"
+                  onClick={() => handleSort('totalSeats')}
+                >
+                  <div className="flex items-center">
+                    Seats
+                    {renderSortIndicator('totalSeats')}
+                  </div>
+                </th>
+                <th
+                  scope="col"
+                  className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 cursor-pointer"
+                  onClick={() => handleSort('farePrice')}
+                >
+                  <div className="flex items-center">
+                    Fare
+                    {renderSortIndicator('farePrice')}
+                  </div>
+                </th>
+                <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                  <span className="sr-only">Actions</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200 bg-white">
+              {filteredSchedules.map((schedule) => {
+                const bus = getBusDetails(schedule.busId);
+                const route = getRouteDetails(schedule.routeId);
+
+                return (
+                  <tr key={schedule.id}>
+                    <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm">
+                      <div className="font-medium text-gray-900">{bus?.busName}</div>
+                      {route ? (
+                        <div className="text-gray-500">
+                          {route.sourceCity} → {route.destinationCity}
+                        </div>
+                      ) : (
+                        <div className="text-gray-500">Route not assigned</div>
+                      )}
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                      {new Date(schedule.scheduleDate).toLocaleDateString()}
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                      {schedule.departureTime} - {schedule.arrivalTime}
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                      {schedule.totalSeats} available
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-4 text-sm font-medium text-gray-900">
+                      ₹{schedule.farePrice.toLocaleString()}
+                    </td>
+                    <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => handleEditClick(schedule)}
+                          className="text-primary hover:text-primary-dark"
+                          disabled={loading}
+                          aria-label="Edit schedule"
+                        >
+                          <Edit className="h-5 w-5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteSchedule(schedule.id)}
+                          className="text-red-600 hover:text-red-900"
+                          disabled={loading}
+                          aria-label="Delete schedule"
+                        >
+                          <Trash2 className="h-5 w-5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       {/* Header section */}
       <div className="sm:flex sm:items-center">
         <div className="sm:flex-auto">
-          <h1 className="text-2xl font-semibold text-gray-900">Schedules Management</h1>
-          <p className="mt-2 text-sm text-gray-700">
+          <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">Schedules Management</h1>
+          <p className="mt-1 sm:mt-2 text-sm text-gray-700">
             Manage bus schedules, timings, and fares
           </p>
         </div>
-        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+        <div className="mt-3 sm:mt-0 sm:ml-4 sm:flex-none">
           <Button
             variant="primary"
             onClick={() => setShowAddModal(true)}
             leftIcon={<Plus size={20} />}
             disabled={loading}
+            size={isMobileView ? 'sm' : 'md'}
           >
             Add Schedule
           </Button>
@@ -353,7 +511,7 @@ const getBusDetails = (busId: number): Bus | undefined => {
       </div>
 
       {/* Search and pagination controls */}
-      <div className="mt-6 flex flex-col sm:flex-row gap-4">
+      <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row gap-3">
         <Input
           type="text"
           placeholder="Search schedules..."
@@ -362,9 +520,10 @@ const getBusDetails = (busId: number): Bus | undefined => {
           leftIcon={<Search size={20} />}
           fullWidth
           disabled={loading}
+          // size={isMobileView ? 'sm' : 'md'}
         />
         <div className="flex items-center gap-2">
-          <label htmlFor="itemsPerPage" className="text-sm text-gray-700">
+          <label htmlFor="itemsPerPage" className="text-sm text-gray-700 whitespace-nowrap">
             Items per page:
           </label>
           <select
@@ -374,7 +533,7 @@ const getBusDetails = (busId: number): Bus | undefined => {
               setItemsPerPage(Number(e.target.value));
               setCurrentPage(1);
             }}
-            className="rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+            className="rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary text-sm"
             disabled={loading}
           >
             {[5, 10, 20, 50].map(option => (
@@ -386,151 +545,23 @@ const getBusDetails = (busId: number): Bus | undefined => {
         </div>
       </div>
 
-      {/* Schedules table */}
-      <div className="mt-8 flex flex-col">
-        <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-          <div className="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
-            <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-              <table className="min-w-full divide-y divide-gray-300">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th
-                      scope="col"
-                      className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 cursor-pointer"
-                      onClick={() => handleSort('busName')}
-                    >
-                      <div className="flex items-center">
-                        Bus & Route
-                        {renderSortIndicator('busName')}
-                      </div>
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 cursor-pointer"
-                      onClick={() => handleSort('scheduleDate')}
-                    >
-                      <div className="flex items-center">
-                        Date
-                        {renderSortIndicator('scheduleDate')}
-                      </div>
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 cursor-pointer"
-                      onClick={() => handleSort('departureTime')}
-                    >
-                      <div className="flex items-center">
-                        Time
-                        {renderSortIndicator('departureTime')}
-                      </div>
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 cursor-pointer"
-                      onClick={() => handleSort('totalSeats')}
-                    >
-                      <div className="flex items-center">
-                        Seats
-                        {renderSortIndicator('totalSeats')}
-                      </div>
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 cursor-pointer"
-                      onClick={() => handleSort('farePrice')}
-                    >
-                      <div className="flex items-center">
-                        Fare
-                        {renderSortIndicator('farePrice')}
-                      </div>
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 cursor-pointer"
-                      onClick={() => handleSort('automationDuration')}
-                    >
-                      <div className="flex items-center">
-                        Duration
-                        {renderSortIndicator('automationDuration')}
-                      </div>
-                    </th>
-                    <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
-                      <span className="sr-only">Actions</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 bg-white">
-                  {filteredSchedules.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} className="py-4 text-center text-sm text-gray-500">
-                        {searchTerm ? 'No matching schedules found' : 'No schedules available'}
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredSchedules.map((schedule) => {
-                      const bus = getBusDetails(schedule.busId);
-                      const route = getRouteDetails(schedule.routeId);
-
-                      return (
-                        <tr key={schedule.id}>
-                          <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm">
-                            <div className="font-medium text-gray-900">{bus?.busName}</div>
-                            {route ? (
-                              <div className="text-gray-500">
-                                {route.sourceCity} → {route.destinationCity}
-                              </div>
-                            ) : (
-                              <div className="text-gray-500">Route not assigned</div>
-                            )}
-                          </td>
-                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                            {new Date(schedule.scheduleDate).toLocaleDateString()}
-                          </td>
-                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                            {schedule.departureTime} - {schedule.arrivalTime}
-                          </td>
-                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                            {schedule.totalSeats} available
-                          </td>
-                          <td className="whitespace-nowrap px-3 py-4 text-sm font-medium text-gray-900">
-                            ₹{schedule.farePrice.toLocaleString()}
-                          </td>
-                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                            {schedule.automationDuration}
-                          </td>
-                          <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                            <div className="flex justify-end gap-2">
-                              <button
-                                onClick={() => handleEditClick(schedule)}
-                                className="text-primary hover:text-primary-dark"
-                                disabled={loading}
-                                aria-label="Edit schedule"
-                              >
-                                <Edit className="h-5 w-5" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteSchedule(schedule.id)}
-                                className="text-red-600 hover:text-red-900"
-                                disabled={loading}
-                                aria-label="Delete schedule"
-                              >
-                                <Trash2 className="h-5 w-5" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
+      {/* Schedules list */}
+      <div className="mt-4 sm:mt-6">
+        {filteredSchedules.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            {searchTerm ? 'No matching schedules found' : 'No schedules available'}
           </div>
-        </div>
+        ) : isMobileView ? (
+          <div className="space-y-3">
+            {filteredSchedules.map(renderMobileCard)}
+          </div>
+        ) : (
+          renderDesktopTable()
+        )}
       </div>
 
       {/* Pagination controls */}
-      <div className="flex flex-col sm:flex-row items-center justify-between mt-4 gap-4">
+      <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3">
         <div className="text-sm text-gray-700">
           Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
           {Math.min(currentPage * itemsPerPage, totalRecords)} of {totalRecords} entries
@@ -587,8 +618,8 @@ const getBusDetails = (busId: number): Bus | undefined => {
 
       {/* Add/Edit Schedule Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-4 sm:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-medium mb-4">
               {selectedSchedule ? 'Edit Schedule' : 'Add New Schedule'}
             </h3>
@@ -598,7 +629,7 @@ const getBusDetails = (busId: number): Bus | undefined => {
                 <select
                   value={formData.busId}
                   onChange={(e) => setFormData({ ...formData, busId: Number(e.target.value) })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary text-sm p-2"
                   disabled={loading}
                   required
                 >
@@ -616,7 +647,7 @@ const getBusDetails = (busId: number): Bus | undefined => {
                 <select
                   value={formData.routeId}
                   onChange={(e) => setFormData({ ...formData, routeId: Number(e.target.value) })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary text-sm p-2"
                   disabled={loading}
                   required
                 >
@@ -637,6 +668,7 @@ const getBusDetails = (busId: number): Bus | undefined => {
                 required
                 fullWidth
                 disabled={loading}
+                // size={isMobileView ? 'sm' : 'md'}
               />
 
               <div className="grid grid-cols-2 gap-4">
@@ -648,6 +680,7 @@ const getBusDetails = (busId: number): Bus | undefined => {
                   required
                   fullWidth
                   disabled={loading}
+                  // size={isMobileView ? 'sm' : 'md'}
                 />
 
                 <Input
@@ -658,6 +691,7 @@ const getBusDetails = (busId: number): Bus | undefined => {
                   required
                   fullWidth
                   disabled={loading}
+                  // size={isMobileView ? 'sm' : 'md'}
                 />
               </div>
 
@@ -670,6 +704,7 @@ const getBusDetails = (busId: number): Bus | undefined => {
                 fullWidth
                 disabled={loading}
                 min="1"
+                // size={isMobileView ? 'sm' : 'md'}
               />
 
               <Input
@@ -681,6 +716,7 @@ const getBusDetails = (busId: number): Bus | undefined => {
                 fullWidth
                 disabled={loading}
                 min="1"
+                // size={isMobileView ? 'sm' : 'md'}
               />
 
               <div>
@@ -688,7 +724,7 @@ const getBusDetails = (busId: number): Bus | undefined => {
                 <select
                   value={formData.automationDuration}
                   onChange={(e) => setFormData({ ...formData, automationDuration: e.target.value as ScheduleDuration })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary text-sm p-2"
                   disabled={loading}
                   required
                 >
@@ -722,6 +758,7 @@ const getBusDetails = (busId: number): Bus | undefined => {
                     resetForm();
                   }}
                   disabled={loading}
+                  size={isMobileView ? 'sm' : 'md'}
                 >
                   Cancel
                 </Button>
@@ -729,6 +766,7 @@ const getBusDetails = (busId: number): Bus | undefined => {
                   variant="primary"
                   onClick={handleAddSchedule}
                   disabled={loading || !isFormValid}
+                  size={isMobileView ? 'sm' : 'md'}
                 >
                   {loading ? (
                     <LoadingSpinner size="small" />
