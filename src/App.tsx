@@ -9,6 +9,7 @@ import ProfilePage from './pages/customer/ProfilePage';
 import AuthModal from './components/auth/AuthModal';
 import { AuthModalProvider, useAuthModal } from './context/AuthModalContext';
 import PaymentPage from './components/booking/PaymentPage';
+import { Toaster } from 'react-hot-toast';
 
 // // Authentication routes
 // const LoginPage = React.lazy(() => import('./pages/auth/LoginPage'));
@@ -56,70 +57,78 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles?: strin
 
 const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <AuthModalProvider>
-      <Router>
-        <React.Suspense
-          fallback={
-            <div className="flex items-center justify-center min-h-screen">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-            </div>
-          }
-        >
+    <>
+      <AuthProvider>
+        <AuthModalProvider>
+          <Router>
+            <React.Suspense
+              fallback={
+                <div className="flex items-center justify-center min-h-screen">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+                </div>
+              }
+            >
 
-          <AuthModalWrapper />
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/payment" element ={<PaymentPage/>}/>
-            <Route path="/search" element={<SearchResultsPage />} />
-            {/* <Route path="/profile" element={<PassengerInfoPage />} /> */}
-            <Route path="/booking/:scheduleId" element={<BookingPage />} />
-            <Route
-              path="/booking/:scheduleId/passengers"
-              element={
-                <ProtectedRoute>
-                  <PassengerInfoPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/booking/confirmation/:bookingId"
-              element={
-                <ProtectedRoute>
-                  <BookingConfirmationPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/bookings"
-              element={
-                <ProtectedRoute>
-                  <MyBookingsPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <ProfilePage />
-                </ProtectedRoute>
-              }
-            />
-            {/* Admin Routes */}
-            <Route
-              path="/admin/*"
-              element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminDashboardPage />
-                </ProtectedRoute>
-              }
-            />
-          </Routes>
-        </React.Suspense>
-      </Router>
-      </AuthModalProvider>
-    </AuthProvider>
+              <AuthModalWrapper />
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/payment" element={<PaymentPage />} />
+                <Route path="/search" element={<SearchResultsPage />} />
+                {/* <Route path="/profile" element={<PassengerInfoPage />} /> */}
+                <Route path="/booking/:scheduleId" element={<BookingPage />} />
+                <Route
+                  path="/booking/:scheduleId/passengers"
+                  element={
+                    <ProtectedRoute>
+                      <PassengerInfoPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/booking/confirmation/:bookingId"
+                  element={
+                    <ProtectedRoute>
+                      <BookingConfirmationPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/bookings"
+                  element={
+                    <ProtectedRoute>
+                      <MyBookingsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/profile"
+                  element={
+                    <ProtectedRoute>
+                      <ProfilePage />
+                    </ProtectedRoute>
+                  }
+                />
+                {/* Admin Routes */}
+                <Route
+                  path="/admin/*"
+                  element={
+                    <ProtectedRoute allowedRoles={['admin']}>
+                      <AdminDashboardPage />
+                    </ProtectedRoute>
+                  }
+                />
+              </Routes>
+            </React.Suspense>
+          </Router>
+        </AuthModalProvider>
+      </AuthProvider>
+      <Toaster
+        toastOptions={{
+          duration: 2000,
+          // style: toastDefaultOptionsStyle,
+        }}
+      />
+    </>
   );
 };
 

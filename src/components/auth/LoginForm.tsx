@@ -4,6 +4,8 @@ import { Mail, Lock, EyeOff, Eye } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
+import toast from 'react-hot-toast';
+import ForgotPassword from './ForgotPassword';
 
 interface LoginFormProps {
   onLoginSuccess?: () => void;
@@ -16,6 +18,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
     error: '',
     isLoading: false,
     showPassword: false,
+    showForgotPassword: false,
   })
 
   const { login } = useAuth();
@@ -37,6 +40,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
 
       const { role } = JSON.parse(userData);
 
+      toast.success("Logged in Successfully")
       // Role-based navigation
       // switch (role.toLowerCase()) {
       //   case 'admin':
@@ -51,80 +55,85 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
       //   default:
       //     navigate('/');
       // }
-      window.location.reload();
 
       if (onLoginSuccess) {
         onLoginSuccess();
       }
     } catch (error) {
       setState((prev) => ({ ...prev, error: error.message }));
+      toast.error(error.message || "Login failed");
     } finally {
       setState((prev) => ({ ...prev, isLoading: false }));
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div>
-        <Input
-          label="Email"
-          type="email"
-          value={state.email}
-          onChange={(e) => setState((prev) => ({ ...prev, email: e.target.value }))}
-          required
-          fullWidth
-          placeholder="Enter your email address"
-          leftIcon={<Mail size={16} className="text-gray-500" />}
-        />
-      </div>
+    <>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div>
+          <Input
+            label="Email"
+            type="email"
+            value={state.email}
+            onChange={(e) => setState((prev) => ({ ...prev, email: e.target.value }))}
+            required
+            fullWidth
+            placeholder="Enter your email address"
+            leftIcon={<Mail size={16} className="text-gray-500" />}
+          />
+        </div>
 
-      <div>
-        <Input
-          label="Password"
-          type={state.showPassword ? "text" : "password"}
-          value={state.password}
-          onChange={(e) => setState((prev) => ({ ...prev, password: e.target.value }))}
-          required
-          fullWidth
-          placeholder="Enter your password"
-          leftIcon={<Lock size={16} className="text-gray-500" />}
-          rightIcon={
-            <button
-              type="button"
-              onClick={() => setState((prev) => ({ ...prev, showPassword: (!state.showPassword) }))}
-              className="text-gray-500 focus:outline-none"
-            >
-              {state.showPassword ? (
-                <Eye className='h-4 w-4' />
-              ) : (
-                <EyeOff className='h-4 w-4' />
-              )}
-            </button>
-          }
-          helperText={
-            <span className="text-right block w-full">
-              <a href="#" className="text-primary hover:underline text-sm">
-                Forgot password?
-              </a>
-            </span>
-          }
-        />
-      </div>
+        <div>
+          <Input
+            label="Password"
+            type={state.showPassword ? "text" : "password"}
+            value={state.password}
+            onChange={(e) => setState((prev) => ({ ...prev, password: e.target.value }))}
+            required
+            fullWidth
+            placeholder="Enter your password"
+            leftIcon={<Lock size={16} className="text-gray-500" />}
+            rightIcon={
+              <button
+                type="button"
+                onClick={() => setState((prev) => ({ ...prev, showPassword: (!state.showPassword) }))}
+                className="text-gray-500 focus:outline-none"
+              >
+                {state.showPassword ? (
+                  <Eye className='h-4 w-4' />
+                ) : (
+                  <EyeOff className='h-4 w-4' />
+                )}
+              </button>
+            }
+            helperText={
+              <span className="text-right block w-full">
+                <button
+                  type="button"
+                  onClick={() => setState((prev) => ({ ...prev, showForgotPassword: true }))}
+                  className="text-primary hover:underline text-sm"
+                >
+                  Forgot password?
+                </button>
+              </span>
+            }
+          />
+        </div>
 
-      {state.error && <p className="text-red-500 text-sm">{state.error}</p>}
+        {/* {state.error && <p className="text-red-500 text-sm">{state.error}</p>} */}
 
-      <div>
-        <Button
-          type="submit"
-          variant="primary"
-          fullWidth
-          isLoading={state.isLoading}
-        >
-          Sign In
-        </Button>
-      </div>
+        <div>
+          <Button
+            type="submit"
+            variant="primary"
+            fullWidth
+            isLoading={state.isLoading}
+          >
+            Sign In
+          </Button>
+        </div>
 
-      {/* <p className="text-center text-sm text-gray-600">
+        {/* <p className="text-center text-sm text-gray-600">
         Don't have an account yet?{' '}
         <a 
           href="/register" 
@@ -137,7 +146,9 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess }) => {
           Sign up
         </a>
       </p> */}
-    </form>
+      </form>
+      <ForgotPassword isOpen={state.showForgotPassword} onClose={() => setState((prev) => ({ ...prev, showForgotPassword: false }))} />
+    </>
   );
 };
 
