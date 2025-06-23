@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -10,35 +10,59 @@ import {
   Settings,
   HelpCircle,
   LogOut,
-  Armchair
+  Armchair,
+  ChevronLeft,
+  ChevronRight,
+  X
 } from 'lucide-react';
-// import { useAuth } from '../../context/AuthContext';
+import { useMediaQuery } from 'react-responsive';
 
 interface SidebarItemProps {
   to: string;
   icon: React.ReactNode;
   label: string;
   active: boolean;
+  collapsed?: boolean;
 }
 
-const SidebarItem: React.FC<SidebarItemProps> = ({ to, icon, label, active }) => {
+const SidebarItem: React.FC<SidebarItemProps> = ({ to, icon, label, active, collapsed = false }) => {
   return (
     <Link
       to={to}
       className={`flex items-center space-x-3 px-4 py-3 rounded-md transition-colors ${active
-          ? 'bg-primary/10 text-primary font-medium'
-          : 'text-gray-700 hover:bg-gray-100'
-        }`}
+        ? 'bg-primary/10 text-primary font-medium'
+        : 'text-gray-700 hover:bg-gray-100'
+      } ${collapsed ? 'justify-center' : ''}`}
+      title={collapsed ? label : undefined}
     >
       <span className="text-current">{icon}</span>
-      <span>{label}</span>
+      {!collapsed && <span>{label}</span>}
     </Link>
   );
 };
 
-const AdminSidebar: React.FC = () => {
+interface AdminSidebarProps {
+  collapsed: boolean;
+  onToggleCollapse: () => void;
+  mobileOpen: boolean;
+  onMobileToggle: () => void;
+}
+
+const AdminSidebar: React.FC<AdminSidebarProps> = ({ 
+  collapsed, 
+  onToggleCollapse, 
+  mobileOpen,
+  onMobileToggle
+}) => {
   const location = useLocation();
-  //   const { logout } = useAuth();
+  const isMobile = useMediaQuery({ maxWidth: 768 });
+
+  // Close mobile sidebar when route changes
+  useEffect(() => {
+    if (isMobile && mobileOpen) {
+      onMobileToggle();
+    }
+  }, [location.pathname]);
 
   const menuItems = [
     {
@@ -98,18 +122,44 @@ const AdminSidebar: React.FC = () => {
     return location.pathname.startsWith(item.to);
   };
 
+  // Mobile sidebar overlay
+  if (isMobile && !mobileOpen) {
+    return null;
+  }
+
   return (
-    <div className="w-64 bg-white border-r h-screen flex flex-col">
-      <div className="p-4 border-b">
-        <div className="flex items-center space-x-2">
+    <div className={`
+      ${isMobile ? 'fixed inset-y-0 left-0 z-50 w-64' : 'relative'}
+      bg-white border-r h-screen flex flex-col transition-all duration-300
+      ${collapsed && !isMobile ? 'w-20' : 'w-64'}
+      shadow-lg
+    `}>
+      {/* Mobile close button */}
+      {isMobile && (
+        <button
+          onClick={onMobileToggle}
+          className="absolute top-4 right-4 p-1 rounded-full hover:bg-gray-100"
+        >
+          <X size={24} />
+        </button>
+      )}
+
+      {/* Header */}
+      <div className={`p-4 border-b ${collapsed ? 'flex justify-center' : ''}`}>
+        {collapsed ? (
           <Bus className="h-8 w-8 text-primary" />
-          <div>
-            <h2 className="font-bold text-lg text-primary">BlueBus</h2>
-            <p className="text-xs text-gray-500">Admin Panel</p>
+        ) : (
+          <div className="flex items-center space-x-2">
+            <Bus className="h-8 w-8 text-primary" />
+            <div>
+              <h2 className="font-bold text-lg text-primary">BlueBus</h2>
+              <p className="text-xs text-gray-500">Admin Panel</p>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
+      {/* Menu items */}
       <div className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
         {menuItems.map((item) => (
           <SidebarItem
@@ -118,27 +168,40 @@ const AdminSidebar: React.FC = () => {
             icon={item.icon}
             label={item.label}
             active={isActive(item)}
+            collapsed={collapsed && !isMobile}
           />
         ))}
       </div>
 
+      {/* Footer items */}
       <div className="mt-auto border-t p-3 space-y-1">
-        <Link
+        <SidebarItem
           to="/admin/help"
-          className="flex items-center space-x-3 px-4 py-3 rounded-md text-gray-700 hover:bg-gray-100 transition-colors"
-        >
-          <HelpCircle size={20} />
-          <span>Help & Support</span>
-        </Link>
+          icon={<HelpCircle size={20} />}
+          label="Help & Support"
+          active={location.pathname === '/admin/help'}
+          collapsed={collapsed && !isMobile}
+        />
 
         <button
-          //   onClick={logout}
-          className="flex items-center space-x-3 px-4 py-3 rounded-md text-red-600 hover:bg-red-50 w-full text-left transition-colors"
+          // onClick={logout}
+          className={`flex items-center ${collapsed && !isMobile ? 'justify-center' : 'space-x-3 px-4'} py-3 rounded-md text-red-600 hover:bg-red-50 w-full text-left transition-colors`}
+          title={collapsed && !isMobile ? "Logout" : undefined}
         >
           <LogOut size={20} />
-          <span>Logout</span>
+          {(!collapsed || isMobile) && <span>Logout</span>}
         </button>
       </div>
+
+      {/* Collapse toggle (desktop only) */}
+      {!isMobile && (
+        <button
+          onClick={onToggleCollapse}
+          className="absolute -right-3 top-6 bg-white p-1 rounded-full border shadow-sm hover:bg-gray-50"
+        >
+          {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+        </button>
+      )}
     </div>
   );
 };

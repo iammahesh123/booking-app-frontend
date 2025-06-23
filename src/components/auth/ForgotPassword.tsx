@@ -37,15 +37,15 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ isOpen, onClose }) => {
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Forgot Password" size="md"    >
-            <div className="text-center mb-6">
+            {/* <div className="text-center mb-6">
                 <p className="mt-2 text-sm text-gray-600">
                     Enter your email to receive a password reset link
                 </p>
-            </div>
+            </div> */}
 
             <form onSubmit={handleSubmit} className="space-y-4">
                 <Input
-                    label="Email"
+                    // label="Email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}

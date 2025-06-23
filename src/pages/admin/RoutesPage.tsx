@@ -1,12 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Edit, Trash2, Search, MapPin, Clock, ArrowRight, ChevronLeft, ChevronRight, ArrowUp, ArrowDown } from 'lucide-react';
+import { 
+  Plus, Edit, Trash2, Search, MapPin, Clock, 
+  ArrowRight, ChevronLeft, ChevronRight, ArrowUp, ArrowDown 
+} from 'lucide-react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { Route, Stop, OrderBy } from '../../data/types';
 import { formatTime } from '../../components/utils/formatTime';
-import { createRoute, createStop, deleteRoute, fetchRoutes, updateRoute, updateStop } from '../../apiConfig/Bus';
+import { 
+  createRoute, createStop, deleteRoute, 
+  fetchRoutes, updateRoute, updateStop 
+} from '../../apiConfig/Bus';
+import useMediaQuery from '../../hooks/useMediaQuery';
+
 
 const RoutesPage: React.FC = () => {
+  const isMobile = useMediaQuery('(max-width: 640px)');
   const [routes, setRoutes] = useState<Route[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +34,7 @@ const RoutesPage: React.FC = () => {
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [itemsPerPage, setItemsPerPage] = useState(isMobile ? 5 : 10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalRecords, setTotalRecords] = useState(0);
   const [sortColumn, setSortColumn] = useState<string>('sourceCity');
@@ -64,7 +73,7 @@ const RoutesPage: React.FC = () => {
     );
   });
 
-    const handleAddRoute = async () => {
+  const handleAddRoute = async () => {
     if (isSubmitting) return;
     
     try {
@@ -81,9 +90,9 @@ const RoutesPage: React.FC = () => {
       };
 
       if (selectedRoute && selectedRoute.id) {
-        const updatedRoute  = await await updateRoute(selectedRoute.id, routeData);
+        const updatedRoute = await updateRoute(selectedRoute.id, routeData);
         setRoutes(routes.map(route =>
-         route.id === selectedRoute.id ? updatedRoute : route
+          route.id === selectedRoute.id ? updatedRoute : route
         ));
       } else {
         const newRoute = await createRoute(routeData);
@@ -100,7 +109,7 @@ const RoutesPage: React.FC = () => {
     }
   };
 
-    const handleStopChange = (index: number, field: keyof Stop, value: string | number) => {
+  const handleStopChange = (index: number, field: keyof Stop, value: string | number) => {
     const newStops = [...formData.stops];
     newStops[index] = {
       ...newStops[index],
@@ -145,6 +154,7 @@ const RoutesPage: React.FC = () => {
       setCurrentPage(currentPage - 1);
     }
   };
+
   const resetForm = () => {
     setFormData({
       id: 0,
@@ -180,7 +190,6 @@ const RoutesPage: React.FC = () => {
     });
   };
 
-
   const saveStops = async (stops: Stop[]): Promise<number[]> => {
     const stopIds: number[] = [];
 
@@ -211,7 +220,6 @@ const RoutesPage: React.FC = () => {
     return stopIds;
   };
 
-
   const handleDeleteRoute = async (routeId: number) => {
     if (window.confirm('Are you sure you want to delete this route?')) {
       try {
@@ -223,7 +231,6 @@ const RoutesPage: React.FC = () => {
       }
     }
   };
-
 
   const handleEditRoute = (route: Route) => {
     setSelectedRoute(route);
@@ -244,71 +251,74 @@ const RoutesPage: React.FC = () => {
     setShowAddModal(true);
   };
 
-  if (loading) return <div>Loading routes...</div>;
-  if (error) return <div className="text-red-500">{error}</div>;
-
+  if (loading) return <div className="p-4 text-center">Loading routes...</div>;
+  if (error) return <div className="p-4 text-red-500 text-center">{error}</div>;
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <div className="sm:flex sm:items-center">
         <div className="sm:flex-auto">
-          <h1 className="text-2xl font-semibold text-gray-900">Routes Management</h1>
-          <p className="mt-2 text-sm text-gray-700">
+          <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">Routes Management</h1>
+          <p className="mt-1 sm:mt-2 text-sm text-gray-700">
             Manage bus routes, stops, and their details
           </p>
         </div>
-        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+        <div className="mt-3 sm:mt-0 sm:ml-4 sm:flex-none">
           <Button
             variant="primary"
             onClick={() => setShowAddModal(true)}
             leftIcon={<Plus size={20} />}
+            size={isMobile ? 'sm' : 'md'}
+            fullWidth={isMobile}
           >
-            Add Route
+            {isMobile ? 'Add' : 'Add Route'}
           </Button>
         </div>
       </div>
 
-      <div className="mt-6 flex flex-col sm:flex-row gap-4">
-        <Input
-          type="text"
-          placeholder="Search routes..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          leftIcon={<Search size={20} />}
-          fullWidth
-        />
-        <div className="flex items-center gap-2">
-          <label htmlFor="itemsPerPage" className="text-sm text-gray-700">
-            Items per page:
-          </label>
-          <select
-            id="itemsPerPage"
-            value={itemsPerPage}
-            onChange={(e) => {
-              setItemsPerPage(Number(e.target.value));
-              setCurrentPage(1);
-            }}
-            className="rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-          >
-            {[5, 10, 20, 50].map(option => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
+      <div className="mt-4 sm:mt-6 flex flex-col gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Input
+            type="text"
+            placeholder="Search routes..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            leftIcon={<Search size={20} />}
+            fullWidth
+          />
+          <div className="flex items-center gap-2 sm:w-auto">
+            <label htmlFor="itemsPerPage" className="text-sm text-gray-700 whitespace-nowrap">
+              Items per page:
+            </label>
+            <select
+              id="itemsPerPage"
+              value={itemsPerPage}
+              onChange={(e) => {
+                setItemsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary text-sm"
+            >
+              {[5, 10, 20, 50].map(option => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
-      <div className="mt-8 flex flex-col">
-        <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-          <div className="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
-            <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+      <div className="mt-4 sm:mt-6">
+        <div className="overflow-x-auto">
+          <div className="inline-block min-w-full align-middle">
+            <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 rounded-lg">
               <table className="min-w-full divide-y divide-gray-300">
                 <thead className="bg-gray-50">
                   <tr>
                     <th
                       scope="col"
-                      className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 cursor-pointer"
+                      className="py-3 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 cursor-pointer"
                       onClick={() => handleSort('sourceCity')}
                     >
                       <div className="flex items-center">
@@ -316,12 +326,14 @@ const RoutesPage: React.FC = () => {
                         {renderSortIndicator('sourceCity')}
                       </div>
                     </th>
-                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                      Stops
-                    </th>
+                    {!isMobile && (
+                      <th scope="col" className="px-3 py-3 text-left text-sm font-semibold text-gray-900">
+                        Stops
+                      </th>
+                    )}
                     <th
                       scope="col"
-                      className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 cursor-pointer"
+                      className="px-3 py-3 text-left text-sm font-semibold text-gray-900 cursor-pointer"
                       onClick={() => handleSort('totalDistance')}
                     >
                       <div className="flex items-center">
@@ -331,7 +343,7 @@ const RoutesPage: React.FC = () => {
                     </th>
                     <th
                       scope="col"
-                      className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 cursor-pointer"
+                      className="px-3 py-3 text-left text-sm font-semibold text-gray-900 cursor-pointer"
                       onClick={() => handleSort('totalDuration')}
                     >
                       <div className="flex items-center">
@@ -339,7 +351,7 @@ const RoutesPage: React.FC = () => {
                         {renderSortIndicator('totalDuration')}
                       </div>
                     </th>
-                    <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                    <th scope="col" className="relative py-3 pl-3 pr-4 sm:pr-6">
                       <span className="sr-only">Actions</span>
                     </th>
                   </tr>
@@ -347,14 +359,14 @@ const RoutesPage: React.FC = () => {
                 <tbody className="divide-y divide-gray-200 bg-white">
                   {filteredRoutes.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="py-4 text-center text-sm text-gray-500">
+                      <td colSpan={isMobile ? 3 : 5} className="py-4 text-center text-sm text-gray-500">
                         {searchTerm ? 'No matching routes found' : 'No routes available'}
                       </td>
                     </tr>
                   ) : (
                     filteredRoutes.map((route) => (
-                      <tr key={route.id}>
-                        <td className="whitespace-nowrap py-4 pl-5 pr-4 text-sm">
+                      <tr key={route.id} className="hover:bg-gray-50">
+                        <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm">
                           <div className="flex items-center">
                             <MapPin className="h-5 w-5 text-gray-400 mr-2" />
                             <div className="flex items-center">
@@ -363,18 +375,37 @@ const RoutesPage: React.FC = () => {
                               <div className="font-medium text-gray-900">{route.destinationCity}</div>
                             </div>
                           </div>
+                          {isMobile && route.stops?.length > 0 && (
+                            <div className="mt-2 text-xs text-gray-500">
+                              <div className="font-medium mb-1">Stops:</div>
+                              {route.stops.slice(0, 2).map((stop, index) => (
+                                <div key={index} className="flex items-center">
+                                  <span className="truncate">{stop.stopName}</span>
+                                  <Clock className="h-3 w-3 mx-1" />
+                                  <span>{formatTime(stop.departureTime)} - {formatTime(stop.arrivalTime)}</span>
+                                </div>
+                              ))}
+                              {route.stops.length > 2 && (
+                                <div className="text-primary mt-1">
+                                  +{route.stops.length - 2} more stops
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </td>
-                        <td className="px-3 py-4 text-sm text-gray-500">
-                          <div className="flex flex-col gap-1">
-                            {route.stops?.map((stop, index) => (
-                              <div key={index} className="flex items-center text-xs">
-                                <span className="w-20 truncate">{stop.stopName}</span>
-                                <Clock className="h-3 w-3 mx-1" />
-                                <span>{formatTime(stop.departureTime)} - {formatTime(stop.arrivalTime)}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </td>
+                        {!isMobile && (
+                          <td className="px-3 py-4 text-sm text-gray-500">
+                            <div className="flex flex-col gap-1">
+                              {route.stops?.map((stop, index) => (
+                                <div key={index} className="flex items-center text-xs">
+                                  <span className="w-20 truncate">{stop.stopName}</span>
+                                  <Clock className="h-3 w-3 mx-1" />
+                                  <span>{formatTime(stop.departureTime)} - {formatTime(stop.arrivalTime)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </td>
+                        )}
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                           {route.totalDistance} km
                         </td>
@@ -386,12 +417,14 @@ const RoutesPage: React.FC = () => {
                             <button
                               onClick={() => handleEditRoute(route)}
                               className="text-primary hover:text-primary-dark"
+                              aria-label="Edit route"
                             >
                               <Edit className="h-5 w-5" />
                             </button>
                             <button
                               onClick={() => handleDeleteRoute(route.id)}
                               className="text-red-600 hover:text-red-900"
+                              aria-label="Delete route"
                             >
                               <Trash2 className="h-5 w-5" />
                             </button>
@@ -421,11 +454,12 @@ const RoutesPage: React.FC = () => {
             disabled={currentPage === 1 || loading}
             leftIcon={<ChevronLeft size={16} />}
             size="sm"
+            aria-label="Previous page"
           >
-            Previous
+            {!isMobile && 'Previous'}
           </Button> 
           
-          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+          {!isMobile && Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
             let pageNum;
             if (totalPages <= 5) {
               pageNum = i + 1;
@@ -445,11 +479,18 @@ const RoutesPage: React.FC = () => {
                 disabled={loading}
                 className="w-10 h-10 p-0 flex items-center justify-center"
                 size="sm"
+                aria-label={`Page ${pageNum}`}
               >
                 {pageNum}
               </Button>
             );
           })}
+          
+          {isMobile && (
+            <div className="text-sm">
+              Page {currentPage} of {totalPages}
+            </div>
+          )}
           
           <Button
             variant="outline"
@@ -457,16 +498,17 @@ const RoutesPage: React.FC = () => {
             disabled={currentPage === totalPages || loading}
             rightIcon={<ChevronRight size={16} />}
             size="sm"
+            aria-label="Next page"
           >
-            Next
+            {!isMobile && 'Next'}
           </Button>
         </div>
       </div>
 
       {/* Add/Edit Route Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-4 sm:p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-medium mb-4">
               {selectedRoute ? 'Edit Route' : 'Add New Route'}
             </h3>
@@ -509,6 +551,7 @@ const RoutesPage: React.FC = () => {
                   placeholder="5h 30m"
                 />
               </div>
+              
               <div className="border-t pt-4">
                 <div className="flex justify-between items-center mb-4">
                   <h4 className="text-sm font-medium text-gray-900">Stops</h4>
@@ -529,7 +572,7 @@ const RoutesPage: React.FC = () => {
                 )}
 
                 {formData.stops.map((stop, index) => (
-                  <div key={index} className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-4 items-end">
+                  <div key={index} className="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-4 items-end">
                     <Input
                       label="Stop Name"
                       value={stop.stopName}
@@ -567,6 +610,7 @@ const RoutesPage: React.FC = () => {
                         type="button"
                         onClick={() => handleRemoveStop(index)}
                         className="text-red-600 hover:text-red-900 mb-1"
+                        aria-label="Remove stop"
                       >
                         <Trash2 className="h-5 w-5" />
                       </button>
