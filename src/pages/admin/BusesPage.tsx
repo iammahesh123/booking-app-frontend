@@ -1,11 +1,14 @@
-import React, { useEffect, useState } from 'react';
-import { Plus, Edit, Trash2, Search, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { Plus, Edit, Trash2, Bus as BusIcon, ShieldAlert } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import Modal from '../../components/ui/Modal';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import DataTable, { ColumnDef } from '../../components/ui/DataTable';
 import { Bus, OrderBy } from '../../data/types';
 import api, { busApi } from '../../apiConfig/Bus';
 import Select from 'react-select';
-import { useMediaQuery } from 'react-responsive';
+import toast from 'react-hot-toast';
 
 interface FormErrors {
   busName?: string;
@@ -15,13 +18,23 @@ interface FormErrors {
   operatorName?: string;
 }
 
-const BusesPage: React.FC = () => {
+export const BusesPage: React.FC = () => {
   const [buses, setBuses] = useState<Bus[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedBus, setSelectedBus] = useState<Bus | null>(null);
+  const [busToDelete, setBusToDelete] = useState<Bus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalRecords, setTotalRecords] = useState(0);
+
+  // Pagination and sorting
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [sortColumn, setSortColumn] = useState<string>('id');
+  const [orderBy, setOrderBy] = useState<OrderBy>(OrderBy.ASC);
+
   const [formData, setFormData] = useState({
     id: 0,
     busName: '',
@@ -29,18 +42,9 @@ const BusesPage: React.FC = () => {
     busType: 'AC' as 'AC' | 'NON_AC' | 'SLEEPER' | 'SEMI_SLEEPER',
     totalSeats: 40,
     busAmenities: [] as string[],
-    operatorName: ''
+    operatorName: '',
   });
   const [formErrors, setFormErrors] = useState<FormErrors>({});
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalRecords, setTotalRecords] = useState(0);
-  const isMobile = useMediaQuery({ maxWidth: 768 });
-
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(isMobile ? 5 : 10);
-  const [sortColumn, setSortColumn] = useState<string>('id');
-  const [orderBy, setOrderBy] = useState<OrderBy>(OrderBy.ASC);
 
   const amenityOptions = [
     { value: 'WIFI', label: 'WiFi' },
@@ -55,129 +59,98 @@ const BusesPage: React.FC = () => {
     { value: 'BLANKET', label: 'Blanket' },
   ];
 
-  // Fetch buses on component mount and when pagination changes
-  useEffect(() => {
-    const fetchBuses = async () => {
-      try {
-        setIsLoading(true);
-        const response = await api.get('/bus', {
-          params: {
-            pageNumber: currentPage - 1,
-            pageSize: itemsPerPage,
-            sortColumn: sortColumn,
-            orderBy: orderBy,
-            searchTerm: searchTerm
-          }
-        });
-        setBuses(response.data.data);
-        setTotalPages(response.data.totalPages);
-        setTotalRecords(response.data.totalRecords);
-      } catch (err) {
-        setError('Failed to fetch buses. Please try again later.');
-        console.error('Fetch buses error:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchBuses();
+  const fetchBuses = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const response = await api.get('/bus', {
+        params: {
+          pageNumber: currentPage - 1,
+          pageSize: itemsPerPage,
+          sortColumn,
+          orderBy,
+          searchTerm,
+        },
+      });
+      setBuses(response.data.data || []);
+      setTotalPages(response.data.totalPages || 1);
+      setTotalRecords(response.data.totalRecords || 0);
+    } catch (err) {
+      toast.error('Failed to load fleet buses');
+      console.error('Fetch buses error:', err);
+    } finally {
+      setIsLoading(false);
+    }
   }, [currentPage, itemsPerPage, sortColumn, orderBy, searchTerm]);
 
-  // Adjust items per page when screen size changes
   useEffect(() => {
-    setItemsPerPage(isMobile ? 5 : 10);
-  }, [isMobile]);
+    fetchBuses();
+  }, [fetchBuses]);
 
-  const filteredBuses = buses?.filter(bus => {
-    if (!bus) return false;
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      (bus.busName?.toLowerCase() || '').includes(searchLower) ||
-      (bus.busNumber?.toLowerCase() || '').includes(searchLower) ||
-      (bus.operatorName?.toLowerCase() || '').includes(searchLower)
-    );
-  }) || [];
+  const handleSort = (columnKey: string) => {
+    if (sortColumn === columnKey) {
+      setOrderBy(orderBy === OrderBy.ASC ? OrderBy.DESC : OrderBy.ASC);
+    } else {
+      setSortColumn(columnKey);
+      setOrderBy(OrderBy.ASC);
+    }
+    setCurrentPage(1);
+  };
 
-  // Validate form fields
   const validateForm = (): boolean => {
     const errors: FormErrors = {};
-
-    if (!formData.busName.trim()) {
-      errors.busName = 'Bus name is required';
-    }
-
-    if (!formData.busNumber.trim()) {
-      errors.busNumber = 'Bus number is required';
-    }
-
-    if (!formData.operatorName.trim()) {
-      errors.operatorName = 'Operator is required';
-    }
-
+    if (!formData.busName.trim()) errors.busName = 'Bus name is required';
+    if (!formData.busNumber.trim()) errors.busNumber = 'Registration number is required';
+    if (!formData.operatorName.trim()) errors.operatorName = 'Operator name is required';
     if (!formData.totalSeats || formData.totalSeats <= 0) {
-      errors.totalSeats = 'Total seats must be a positive number';
+      errors.totalSeats = 'Seats must be a positive number';
     }
-
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
-  // Pagination controls
-  const goToPage = (page: number) => {
-    setCurrentPage(page);
-  };
-
-  const goToNextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
-    }
-  };
-
-  const goToPreviousPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    }
-  };
-
-  // Handle form submission (both add and update)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
 
     try {
-      if (selectedBus) {
-        // Update existing bus
-        const updatedBus = await busApi.update(selectedBus.id, formData);
-        setBuses(buses.map(bus => bus.id === selectedBus.id ? updatedBus : bus));
+      setIsSubmitting(true);
+      if (selectedBus?.id) {
+        const updated = await busApi.update(selectedBus.id, formData);
+        setBuses((prev) => prev.map((b) => (b.id === selectedBus.id ? updated : b)));
+        toast.success('Bus updated successfully');
       } else {
-        // Add new bus
-        const newBus = await busApi.create(formData);
-        setBuses([...buses, newBus]);
+        const created = await busApi.create(formData);
+        setBuses((prev) => [created, ...prev]);
+        setTotalRecords((prev) => prev + 1);
+        toast.success('Bus added to fleet');
       }
-
       closeModal();
-    } catch (err) {
-      const action = selectedBus ? 'update' : 'add';
-      setError(`Failed to ${action} bus. Please try again.`);
-      console.error(`${action} bus error:`, err);
+    } catch (err: any) {
+      toast.error(err?.message || 'Operation failed');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  // Handle bus deletion
-  const handleDeleteBus = async (busId: number) => {
-    if (!window.confirm('Are you sure you want to delete this bus?')) return;
-
+  const handleDelete = async () => {
+    if (!busToDelete?.id) return;
     try {
-      await busApi.delete(busId);
-      setBuses(buses.filter(bus => bus.id !== busId));
+      setIsSubmitting(true);
+      await busApi.delete(busToDelete.id);
+      setBuses((prev) => prev.filter((b) => b.id !== busToDelete.id));
+      setTotalRecords((prev) => Math.max(0, prev - 1));
+      toast.success(`Bus ${busToDelete.busNumber} deleted`);
+      setBusToDelete(null);
     } catch (err) {
-      setError('Failed to delete bus. Please try again.');
-      console.error('Delete bus error:', err);
+      toast.error('Failed to delete bus. It may have active schedules.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  // Reset form to default values
-  const resetForm = () => {
+  const closeModal = () => {
+    setShowAddModal(false);
+    setSelectedBus(null);
     setFormData({
       id: 0,
       busName: '',
@@ -185,467 +158,289 @@ const BusesPage: React.FC = () => {
       busType: 'AC',
       totalSeats: 40,
       busAmenities: [],
-      operatorName: ''
+      operatorName: '',
     });
     setFormErrors({});
   };
 
-  // Close modal and reset form
-  const closeModal = () => {
-    setShowAddModal(false);
-    setSelectedBus(null);
-    resetForm();
-  };
-
-  // Handle edit button click
-  const handleEditClick = (bus: Bus) => {
+  const openEdit = (bus: Bus) => {
     setSelectedBus(bus);
     setFormData({
-      id: bus.id,
+      id: bus.id || 0,
       busName: bus.busName || '',
       busNumber: bus.busNumber || '',
       busType: bus.busType || 'AC',
       totalSeats: bus.totalSeats || 40,
       busAmenities: bus.busAmenities || [],
-      operatorName: bus.operatorName || ''
+      operatorName: bus.operatorName || '',
     });
     setShowAddModal(true);
   };
 
-  // Handle input changes
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: name === 'totalSeats' ? parseInt(value) || 0 : value
-    }));
-
-    // Clear error when user starts typing
-    if (formErrors[name as keyof FormErrors]) {
-      setFormErrors(prev => ({ ...prev, [name]: undefined }));
-    }
-  };
-
-  if (isLoading && buses.length === 0) return <div className="p-6">Loading Buses...</div>;
-  if (error) return <div className="p-6 text-red-500">{error}</div>;
+  const columns: ColumnDef<Bus>[] = [
+    {
+      key: 'busName',
+      header: 'Bus Details',
+      sortable: true,
+      render: (bus) => (
+        <div>
+          <span className="font-bold text-gray-900 block">{bus.busName}</span>
+          <span className="font-mono text-xs text-gray-500">{bus.busNumber}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'busType',
+      header: 'Type',
+      sortable: true,
+      render: (bus) => (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-gray-100 text-gray-800">
+          {bus.busType?.replace('_', ' ')}
+        </span>
+      ),
+    },
+    {
+      key: 'totalSeats',
+      header: 'Capacity',
+      sortable: true,
+      render: (bus) => (
+        <span className="text-gray-900 font-semibold">{bus.totalSeats} seats</span>
+      ),
+    },
+    {
+      key: 'operatorName',
+      header: 'Operator',
+      sortable: true,
+      render: (bus) => <span className="font-medium text-gray-800">{bus.operatorName}</span>,
+    },
+    {
+      key: 'busAmenities',
+      header: 'Amenities',
+      render: (bus) => (
+        <div className="flex flex-wrap gap-1 max-w-xs">
+          {(bus.busAmenities || []).slice(0, 3).map((amenity, i) => (
+            <span
+              key={i}
+              className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-medium"
+            >
+              {amenity.replace('_', ' ')}
+            </span>
+          ))}
+          {(bus.busAmenities || []).length > 3 && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 font-medium">
+              +{bus.busAmenities!.length - 3}
+            </span>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      align: 'right',
+      render: (bus) => (
+        <div className="flex items-center justify-end gap-1.5">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => openEdit(bus)}
+            className="h-8 w-8 p-0"
+            title="Edit bus"
+            aria-label={`Edit ${bus.busName}`}
+          >
+            <Edit size={16} className="text-primary" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setBusToDelete(bus)}
+            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+            title="Delete bus"
+            aria-label={`Delete ${bus.busName}`}
+          >
+            <Trash2 size={16} />
+          </Button>
+        </div>
+      ),
+    },
+  ];
 
   return (
-    <div className="p-4 md:p-6">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div className="p-4 md:p-6 space-y-4 max-w-7xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl md:text-2xl font-semibold text-gray-900">Buses Management</h1>
-          <p className="mt-1 md:mt-2 text-sm text-gray-700">
-            Manage your fleet of buses, their details, and amenities
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <BusIcon className="w-6 h-6 text-primary" />
+            Fleet Buses Management
+          </h1>
+          <p className="text-xs md:text-sm text-gray-500 mt-0.5">
+            Register and configure passenger coaches, seating layout, and amenity profiles.
           </p>
         </div>
-        <div>
-          <Button
-            variant="primary"
-            onClick={() => setShowAddModal(true)}
-            leftIcon={<Plus size={18} />}
-            fullWidth={isMobile}
-          >
-            Add Bus
-          </Button>
-        </div>
+
+        <Button
+          variant="primary"
+          onClick={() => setShowAddModal(true)}
+          leftIcon={<Plus size={18} />}
+        >
+          Add Bus
+        </Button>
       </div>
 
-      {/* Error Message */}
-      {error && (
-        <div className="mt-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded">
-          <p>{error}</p>
-          <button
-            className="mt-2 text-sm text-red-700 hover:text-red-900"
-            onClick={() => setError(null)}
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
+      {/* Enterprise DataTable */}
+      <DataTable<Bus>
+        data={buses}
+        columns={columns}
+        totalRecords={totalRecords}
+        page={currentPage}
+        pageSize={itemsPerPage}
+        onPageChange={setCurrentPage}
+        onPageSizeChange={(size) => {
+          setItemsPerPage(size);
+          setCurrentPage(1);
+        }}
+        sortColumn={sortColumn}
+        sortOrder={orderBy === OrderBy.ASC ? 'ASC' : 'DESC'}
+        onSort={handleSort}
+        isLoading={isLoading}
+        searchTerm={searchTerm}
+        onSearchChange={(val) => {
+          setSearchTerm(val);
+          setCurrentPage(1);
+        }}
+        searchPlaceholder="Search by bus name, reg number, or operator..."
+        keyExtractor={(bus) => bus.id || bus.busNumber || Math.random()}
+        emptyMessage="No buses found in fleet"
+        emptySubtext="Add your first bus or adjust search filters."
+        emptyAction={
+          <Button variant="primary" size="sm" onClick={() => setShowAddModal(true)}>
+            Add First Bus
+          </Button>
+        }
+      />
 
-      {/* Search and Pagination Controls */}
-      <div className="mt-4 md:mt-6 flex flex-col sm:flex-row justify-between gap-3">
-        <div className="flex-1">
+      {/* Add / Edit Bus Modal */}
+      <Modal
+        isOpen={showAddModal}
+        onClose={closeModal}
+        title={selectedBus ? 'Edit Bus Details' : 'Register New Bus'}
+        description="Provide vehicle specifications, seating capacity, and onboard amenities."
+        size="md"
+      >
+        <form onSubmit={handleSubmit} className="space-y-4">
           <Input
-            type="text"
-            placeholder="Search buses..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            leftIcon={<Search size={18} />}
+            label="Bus Name"
+            value={formData.busName}
+            onChange={(e) => setFormData({ ...formData, busName: e.target.value })}
+            placeholder="e.g. Scania Multi-Axle Diamond"
+            error={formErrors.busName}
+            required
             fullWidth
           />
-        </div>
-        <div className="flex items-center gap-2">
-          <label htmlFor="itemsPerPage" className="text-sm text-gray-700 whitespace-nowrap">
-            Items per page:
-          </label>
-          <select
-            id="itemsPerPage"
-            value={itemsPerPage}
-            onChange={(e) => {
-              setItemsPerPage(Number(e.target.value));
-              setCurrentPage(1);
-            }}
-            className="rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary text-sm py-1"
-          >
-            {[5, 10, 20, 50].map(option => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
 
-      {/* Loading State */}
-      {isLoading ? (
-        <div className="mt-8 flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-        </div>
-      ) : (
-        /* Buses Table - Mobile Cards or Desktop Table */
-        isMobile ? (
-          <div className="mt-6 space-y-3">
-            {filteredBuses.length > 0 ? (
-              filteredBuses.map((bus) => (
-                <div key={bus.id} className="bg-white p-4 rounded-lg shadow">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-medium text-gray-900">{bus.busName}</h3>
-                      <p className="text-gray-500 text-sm">{bus.busNumber}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleEditClick(bus)}
-                        className="text-primary hover:text-primary-dark p-1"
-                        title="Edit"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteBus(bus.id)}
-                        className="text-red-600 hover:text-red-900 p-1"
-                        title="Delete"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                  <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
-                    <div>
-                      <span className="text-gray-500">Type:</span> {bus.busType}
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Seats:</span> {bus.totalSeats}
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Operator:</span> {bus.operatorName}
-                    </div>
-                  </div>
-                  {bus.busAmenities && bus.busAmenities.length > 0 && (
-                    <div className="mt-2">
-                      <p className="text-sm text-gray-500 mb-1">Amenities:</p>
-                      <div className="flex flex-wrap gap-1">
-                        {bus.busAmenities.map((amenity, index) => (
-                          <span
-                            key={index}
-                            className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800"
-                          >
-                            {amenity.replace('_', ' ')}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))
-            ) : (
-              <div className="py-4 text-center text-sm text-gray-500 bg-white rounded-lg shadow">
-                No buses found
-              </div>
-            )}
-          </div>
-        ) : (
-          /* Desktop Table */
-          <div className="mt-6 flex flex-col">
-            <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-              <div className="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
-                <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-                  <table className="min-w-full divide-y divide-gray-300">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900">
-                          Bus Details
-                        </th>
-                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                          Type
-                        </th>
-                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                          Seats
-                        </th>
-                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                          Operator
-                        </th>
-                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                          Amenities
-                        </th>
-                        <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
-                          <span className="sr-only">Actions</span>
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200 bg-white">
-                      {filteredBuses.length > 0 ? (
-                        filteredBuses.map((bus) => (
-                          <tr key={bus.id}>
-                            <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm">
-                              <div className="font-medium text-gray-900">{bus.busName}</div>
-                              <div className="text-gray-500">{bus.busNumber}</div>
-                            </td>
-                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                              {bus.busType}
-                            </td>
-                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                              {bus.totalSeats}
-                            </td>
-                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                              {bus.operatorName}
-                            </td>
-                            <td className="px-3 py-4 text-sm text-gray-500">
-                              <div className="flex flex-wrap gap-1">
-                                {(bus.busAmenities || []).map((amenity, index) => (
-                                  <span
-                                    key={index}
-                                    className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800"
-                                  >
-                                    {amenity.replace('_', ' ')}
-                                  </span>
-                                ))}
-                              </div>
-                            </td>
-                            <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                              <div className="flex justify-end gap-2">
-                                <button
-                                  onClick={() => handleEditClick(bus)}
-                                  className="text-primary hover:text-primary-dark"
-                                  title="Edit"
-                                >
-                                  <Edit className="h-5 w-5" />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteBus(bus.id)}
-                                  className="text-red-600 hover:text-red-900"
-                                  title="Delete"
-                                >
-                                  <Trash2 className="h-5 w-5" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={6} className="py-4 text-center text-sm text-gray-500">
-                            No buses found
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-        )
-      )}
+          <Input
+            label="Registration / Bus Number"
+            value={formData.busNumber}
+            onChange={(e) => setFormData({ ...formData, busNumber: e.target.value })}
+            placeholder="e.g. KA-01-EQ-9876"
+            error={formErrors.busNumber}
+            required
+            fullWidth
+          />
 
-      {/* Pagination controls */}
-      <div className="flex flex-col sm:flex-row items-center justify-between mt-4 gap-3">
-        <div className="text-sm text-gray-700">
-          Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
-          {Math.min(currentPage * itemsPerPage, totalRecords)} of {totalRecords} entries
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={goToPreviousPage}
-            disabled={currentPage === 1 || isLoading}
-            leftIcon={<ChevronLeft size={16} />}
-            size="sm"
-          >
-            {!isMobile && 'Previous'}
-          </Button>
-          
-          {Array.from({ length: Math.min(isMobile ? 3 : 5, totalPages) }, (_, i) => {
-            let pageNum;
-            if (totalPages <= (isMobile ? 3 : 5)) {
-              pageNum = i + 1;
-            } else if (currentPage <= (isMobile ? 2 : 3)) {
-              pageNum = i + 1;
-            } else if (currentPage >= totalPages - (isMobile ? 1 : 2)) {
-              pageNum = totalPages - (isMobile ? 2 : 4) + i;
-            } else {
-              pageNum = currentPage - (isMobile ? 1 : 2) + i;
-            }
-
-            return (
-              <Button
-                key={pageNum}
-                variant={currentPage === pageNum ? 'primary' : 'outline'}
-                onClick={() => goToPage(pageNum)}
-                disabled={isLoading}
-                className={`${isMobile ? 'w-8 h-8' : 'w-10 h-10'} p-0 flex items-center justify-center`}
-                size="sm"
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Bus Type
+              </label>
+              <select
+                value={formData.busType}
+                onChange={(e) =>
+                  setFormData({ ...formData, busType: e.target.value as any })
+                }
+                className="w-full rounded-md border border-gray-300 p-2 text-sm focus:ring-primary focus:border-primary"
               >
-                {pageNum}
-              </Button>
-            );
-          })}
-          
-          <Button
-            variant="outline"
-            onClick={goToNextPage}
-            disabled={currentPage === totalPages || isLoading}
-            rightIcon={<ChevronRight size={16} />}
-            size="sm"
-          >
-            {!isMobile && 'Next'}
-          </Button>
-        </div>
-      </div>
-
-      {/* Add/Edit Bus Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-auto max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium">
-                {selectedBus ? 'Edit Bus' : 'Add New Bus'}
-              </h3>
-              <button
-                onClick={closeModal}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <X size={20} />
-              </button>
+                <option value="AC">AC Seater</option>
+                <option value="NON_AC">Non-AC Seater</option>
+                <option value="SLEEPER">AC Sleeper</option>
+                <option value="SEMI_SLEEPER">Semi-Sleeper</option>
+              </select>
             </div>
-            <form className="space-y-4" onSubmit={handleSubmit}>
-              {/* Bus Name */}
-              <div>
-                <Input
-                  label="Bus Name"
-                  name="busName"
-                  value={formData.busName}
-                  onChange={handleInputChange}
-                  required
-                  fullWidth
-                  error={formErrors.busName}
-                />
-              </div>
 
-              {/* Bus Number */}
-              <div>
-                <Input
-                  label="Bus Number"
-                  name="busNumber"
-                  value={formData.busNumber}
-                  onChange={handleInputChange}
-                  required
-                  fullWidth
-                  error={formErrors.busNumber}
-                />
-              </div>
-
-              {/* Bus Type */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Bus Type
-                </label>
-                <select
-                  name="busType"
-                  value={formData.busType}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-                >
-                  <option value="AC">AC</option>
-                  <option value="NON_AC">Non-AC</option>
-                  <option value="SLEEPER">Sleeper</option>
-                  <option value="SEMI_SLEEPER">Semi-Sleeper</option>
-                </select>
-              </div>
-
-              {/* Bus Amenities */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Bus Amenities
-                </label>
-                <Select
-                  isMulti
-                  name="busAmenities"
-                  options={amenityOptions}
-                  value={amenityOptions.filter(option => formData.busAmenities.includes(option.value))}
-                  onChange={(selected) => {
-                    const selectedValues = selected ? selected.map(option => option.value) : [];
-                    setFormData(prev => ({
-                      ...prev,
-                      busAmenities: selectedValues,
-                    }));
-                  }}
-                  className="basic-multi-select"
-                  classNamePrefix="select"
-                />
-              </div>
-
-              {/* Total Seats */}
-              <div>
-                <Input
-                  label="Total Seats"
-                  name="totalSeats"
-                  type="number"
-                  value={formData.totalSeats.toString()}
-                  onChange={handleInputChange}
-                  required
-                  fullWidth
-                  error={formErrors.totalSeats}
-                  min="1"
-                />
-              </div>
-
-              {/* Operator */}
-              <div>
-                <Input
-                  label="Operator"
-                  name="operatorName"
-                  value={formData.operatorName}
-                  onChange={handleInputChange}
-                  required
-                  fullWidth
-                  error={formErrors.operatorName}
-                />
-              </div>
-
-              {/* Form Actions */}
-              <div className="flex justify-end gap-3 mt-6">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={closeModal}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  variant="primary"
-                >
-                  {selectedBus ? 'Save Changes' : 'Add Bus'}
-                </Button>
-              </div>
-            </form>
+            <Input
+              label="Total Seats"
+              type="number"
+              value={formData.totalSeats.toString()}
+              onChange={(e) =>
+                setFormData({ ...formData, totalSeats: parseInt(e.target.value) || 0 })
+              }
+              error={formErrors.totalSeats}
+              min="1"
+              max="80"
+              required
+              fullWidth
+            />
           </div>
-        </div>
-      )}
+
+          <Input
+            label="Fleet Operator"
+            value={formData.operatorName}
+            onChange={(e) => setFormData({ ...formData, operatorName: e.target.value })}
+            placeholder="e.g. SRS Travels / VRL Logistics"
+            error={formErrors.operatorName}
+            required
+            fullWidth
+          />
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Onboard Amenities
+            </label>
+            <Select
+              isMulti
+              options={amenityOptions}
+              value={amenityOptions.filter((opt) =>
+                formData.busAmenities.includes(opt.value)
+              )}
+              onChange={(selected) => {
+                setFormData({
+                  ...formData,
+                  busAmenities: selected ? selected.map((s) => s.value) : [],
+                });
+              }}
+              className="text-sm"
+              classNamePrefix="select"
+              placeholder="Select available amenities..."
+            />
+          </div>
+
+          <div className="flex justify-end gap-2.5 pt-4 border-t border-gray-100">
+            <Button type="button" variant="outline" size="sm" onClick={closeModal}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              isLoading={isSubmitting}
+            >
+              {selectedBus ? 'Save Changes' : 'Register Bus'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={!!busToDelete}
+        onClose={() => setBusToDelete(null)}
+        onConfirm={handleDelete}
+        title="Delete Fleet Bus"
+        message={`Are you sure you want to delete bus "${busToDelete?.busName}" (${busToDelete?.busNumber})? This vehicle will be removed from all future timetable assignments.`}
+        confirmText="Delete Bus"
+        variant="danger"
+        isLoading={isSubmitting}
+      />
     </div>
   );
 };

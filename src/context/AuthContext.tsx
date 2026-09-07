@@ -9,6 +9,7 @@ interface AuthContextType {
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string, phone?: string) => Promise<void>;
+  updateUser: (updatedData: Partial<User>) => void;
   logout: () => void;
   clearError: () => void;
 }
@@ -102,6 +103,15 @@ const logout = useCallback(async () => {
   }
 }, []);
 
+  const updateUser = useCallback((updatedData: Partial<User>) => {
+    setUser(prev => {
+      if (!prev) return null;
+      const updated = { ...prev, ...updatedData };
+      localStorage.setItem('busBookingUser', JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
   const clearError = useCallback(() => {
     setError(null);
   }, []);
@@ -113,6 +123,7 @@ const logout = useCallback(async () => {
     error,
     login,
     register,
+    updateUser,
     logout,
     clearError
   };

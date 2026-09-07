@@ -16,7 +16,8 @@ const BookingConfirmationPage: React.FC = () => {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
-  const formatDate = (dateString: string): string => {
+  const formatDate = (dateString?: string): string => {
+    if (!dateString) return new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
     const options: Intl.DateTimeFormatOptions = {
       year: 'numeric',
       month: 'long',
@@ -24,8 +25,6 @@ const BookingConfirmationPage: React.FC = () => {
     };
     return new Date(dateString).toLocaleDateString('en-US', options);
   };
-
-  console.log("Booking details:", bookingDetails);
 
   const formatTime = (timeString: string): string => {
     if (!timeString) return '';
@@ -143,27 +142,21 @@ const BookingConfirmationPage: React.FC = () => {
             <div className="border-b border-gray-200 px-4 py-5 sm:px-6">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                  <h3 className="text-lg font-medium text-gray-900">
-                    Booking ID: {bookingDetails.id}
+                  <h3 className="text-lg font-bold text-gray-900">
+                    Booking Reference: {bookingDetails.id}
                   </h3>
                   <p className="mt-1 text-sm text-gray-500">
-                    Booked on {formatDate(bookingDetails.createdAt)}
+                    Booked on {formatDate(bookingDetails.createdAt || bookingDetails.paymentDate)}
                   </p>
                 </div>
                 <div className="flex gap-3">
                   <Button
                     variant="outline"
                     size="sm"
+                    onClick={() => window.print()}
                     leftIcon={<Download size={16} />}
                   >
-                    Download Ticket
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.print()}
-                  >
-                    Print Ticket
+                    Print / Download Ticket
                   </Button>
                 </div>
               </div>
@@ -191,14 +184,14 @@ const BookingConfirmationPage: React.FC = () => {
                       <MapPin className="h-5 w-5 text-gray-400 mt-0.5" />
                       <div>
                         <p className="text-sm text-gray-500">From</p>
-                        <p className="font-medium text-gray-900">{bookingDetails.sourceCity}</p>
+                        <p className="font-medium text-gray-900">{bookingDetails.sourceCity || bookingDetails.source || 'Departure Point'}</p>
                       </div>
                     </div>
                     <div className="flex items-start space-x-3">
                       <MapPin className="h-5 w-5 text-gray-400 mt-0.5" />
                       <div>
                         <p className="text-sm text-gray-500">To</p>
-                        <p className="font-medium text-gray-900">{bookingDetails.destinationCity}</p>
+                        <p className="font-medium text-gray-900">{bookingDetails.destinationCity || bookingDetails.destination || 'Destination Point'}</p>
                       </div>
                     </div>
                     <div className="flex items-start space-x-3">
@@ -206,7 +199,7 @@ const BookingConfirmationPage: React.FC = () => {
                       <div>
                         <p className="text-sm text-gray-500">Date</p>
                         <p className="font-medium text-gray-900">
-                          {formatDate(bookingDetails.bookingDate)}
+                          {formatDate(bookingDetails.bookingDate || bookingDetails.date)}
                         </p>
                       </div>
                     </div>
@@ -215,7 +208,7 @@ const BookingConfirmationPage: React.FC = () => {
                       <div>
                         <p className="text-sm text-gray-500">Time</p>
                         <p className="font-medium text-gray-900">
-                          {formatTime(bookingDetails.departureTime)} - {formatTime(bookingDetails.arrivalTime)}
+                          {bookingDetails.departureTime ? `${formatTime(bookingDetails.departureTime)} - ${formatTime(bookingDetails.arrivalTime)}` : 'As per schedule'}
                         </p>
                       </div>
                     </div>
@@ -226,13 +219,13 @@ const BookingConfirmationPage: React.FC = () => {
                 <div className="border-b border-gray-200 pb-6">
                   <h4 className="text-sm font-medium text-gray-500 mb-4">Passenger Details</h4>
                   <div className="space-y-4">
-                    {bookingDetails.passangers?.map((passenger: any, index: number) => (
+                    {(bookingDetails.passangers || bookingDetails.passengers || []).map((passenger: any, index: number) => (
                       <div key={index} className="flex items-start space-x-3">
                         <Users className="h-5 w-5 text-gray-400 mt-0.5" />
                         <div>
-                          <p className="font-medium text-gray-900">{passenger.passengerName}</p>
+                          <p className="font-medium text-gray-900">{passenger.passengerName || passenger.name}</p>
                           <p className="text-sm text-gray-500">
-                            {passenger.age} years • {passenger.gender} • Seat {passenger.seatNumber}
+                            {passenger.age} years • {passenger.gender} • Seat {passenger.seatNumber ? (passenger.seatNumber.includes('-') ? passenger.seatNumber.split('-')[1] : passenger.seatNumber) : `P${index + 1}`}
                           </p>
                         </div>
                       </div>
