@@ -5,13 +5,10 @@ import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import BusSearchForm from '../components/booking/BusSearchForm';
 import Button from '../components/ui/Button';
-import AuthModal from '../components/auth/AuthModal';
 import { mockPopularRoutes } from '../data/MockData';
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authModalType, setAuthModalType] = useState<'login' | 'register'>('login');
 
   // Popular routes from mock data
   const popularRoutes = mockPopularRoutes;
@@ -19,12 +16,6 @@ const HomePage: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar/>
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-        type={authModalType}
-        onSwitchType={setAuthModalType}
-      />
 
       <main className="flex-grow">
 {/* Hero Section */}
@@ -79,7 +70,7 @@ const HomePage: React.FC = () => {
         <section className="py-16 bg-gray-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-gray-900 mb-3">Why Choose TravelEase?</h2>
+              <h2 className="text-3xl font-bold text-gray-900 mb-3">Why Choose BlueBus?</h2>
               <p className="text-gray-600 max-w-2xl mx-auto">
                 We provide the best bus booking experience with comprehensive coverage, secure payments, and exceptional customer service.
               </p>
@@ -216,7 +207,7 @@ const HomePage: React.FC = () => {
                 <div className="md:w-1/2 bg-primary p-10 text-white">
                   <h2 className="text-3xl font-bold mb-4">Download Our Mobile App</h2>
                   <p className="mb-6">
-                    Get the TravelEase mobile app for faster bookings, exclusive mobile-only deals, and real-time journey tracking.
+                    Get the BlueBus mobile app for faster bookings, exclusive mobile-only deals, and real-time journey tracking.
                   </p>
                   <div className="flex flex-col sm:flex-row gap-4">
                     <Button

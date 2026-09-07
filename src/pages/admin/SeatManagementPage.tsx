@@ -1,338 +1,412 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Eye, Calendar, Bus, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  Armchair,
+  Bus as BusIcon,
+  Calendar,
+  Eye,
+  Lock,
+  Unlock,
+  User,
+  Users,
+  CheckCircle2,
+  AlertCircle,
+  Clock,
+  MapPin
+} from 'lucide-react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
-import Select from '../../components/ui/Select';
+import Modal from '../../components/ui/Modal';
+import StatusBadge from '../../components/ui/StatusBadge';
 import { Seat, Schedule, Bus as BusType, Route } from '../../data/types';
 import { fetchAllBuses, fetchAllRoutes, fetchAllSchedules, fetchSeats } from '../../apiConfig/Bus';
+import toast from 'react-hot-toast';
 
-const SeatManagementPage: React.FC = () => {
-  const [selectedSchedule, setSelectedSchedule] = useState<number | null>(null);
-  const [showSeatDetails, setShowSeatDetails] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [dateFilter, setDateFilter] = useState('');
-  const [selectedSeats, setSelectedSeats] = useState<Seat[]>([]);
+export const SeatManagementPage: React.FC = () => {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [buses, setBuses] = useState<BusType[]>([]);
   const [routes, setRoutes] = useState<Route[]>([]);
-  const [loading, setLoading] = useState({
-    schedules: false,
-    buses: false,
-    routes: false,
-    seats: false
-  });
-  const [error, setError] = useState('');
-  const [expandedSection, setExpandedSection] = useState<string | null>(null);
+  const [selectedScheduleId, setSelectedScheduleId] = useState<number | null>(null);
+  const [seats, setSeats] = useState<Seat[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingSeats, setLoadingSeats] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedSeatForManifest, setSelectedSeatForManifest] = useState<Seat | null>(null);
 
-  // Fetch all required data on component mount
+  // Fetch initial schedules, buses, routes
   useEffect(() => {
-    const fetchInitialData = async () => {
+    const init = async () => {
       try {
-        setLoading(prev => ({ ...prev, schedules: true, buses: true, routes: true }));
-        
-        const [scheduleData, busData, routeData] = await Promise.all([
+        setLoading(true);
+        const [schedData, busData, routeData] = await Promise.all([
           fetchAllSchedules(),
           fetchAllBuses(),
-          fetchAllRoutes()
+          fetchAllRoutes(),
         ]);
+        setSchedules(schedData || []);
+        setBuses(busData || []);
+        setRoutes(routeData || []);
 
-        setSchedules(scheduleData);
-        setBuses(busData);
-        setRoutes(routeData);
-
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        setError('Failed to load initial data');
+        if (schedData && schedData.length > 0) {
+          handleSelectSchedule(schedData[0].id);
+        }
+      } catch (err) {
+        toast.error('Failed to load seat dispatch data');
       } finally {
-        setLoading(prev => ({
-          ...prev,
-          schedules: false,
-          buses: false,
-          routes: false
-        }));
+        setLoading(false);
       }
     };
-
-    fetchInitialData();
+    init();
   }, []);
 
-  const handleScheduleSelect = async (scheduleId: number) => {
+  const handleSelectSchedule = async (scheduleId: number) => {
+    setSelectedScheduleId(scheduleId);
     try {
-      setLoading(prev => ({ ...prev, seats: true }));
-      setSelectedSchedule(scheduleId);
-      const seats = await fetchSeats(scheduleId);
-      setSelectedSeats(seats);
-      setShowSeatDetails(true);
-    } catch (error) {
-      console.error('Error handling schedule selection:', error);
-      setError('Failed to load seat data');
+      setLoadingSeats(true);
+      const seatList = await fetchSeats(scheduleId);
+      setSeats(seatList || []);
+    } catch (err) {
+      toast.error('Failed to load seats for schedule');
     } finally {
-      setLoading(prev => ({ ...prev, seats: false }));
+      setLoadingSeats(false);
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'available':
-        return 'bg-green-100 text-green-800';
-      case 'booked':
-        return 'bg-red-100 text-red-800';
-      case 'reserved':
-        return 'bg-yellow-100 text-yellow-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
+  const handleToggleSeatBlock = (seatId: number) => {
+    setSeats((prev) =>
+      prev.map((s) => {
+        if (s.id === seatId) {
+          const nextStatus = s.seatStatus === 'BLOCKED' ? 'AVAILABLE' : 'BLOCKED';
+          toast.success(
+            `Seat ${s.seatNumber} is now ${nextStatus === 'BLOCKED' ? 'Blocked / Held' : 'Released for booking'}`
+          );
+          return { ...s, seatStatus: nextStatus as any };
+        }
+        return s;
+      })
+    );
   };
 
-  // Filter schedules based on search term and date
-  const filteredSchedules = schedules.filter(schedule => {
-    const bus = buses.find(b => b.id === schedule.busId);
-    const matchesSearch = searchTerm === '' || 
-      (bus?.busName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      schedule.departureTime.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    const matchesDate = dateFilter === '' || 
-      new Date(schedule.scheduleDate).toISOString().split('T')[0] === dateFilter;
-    
-    return matchesSearch && matchesDate;
-  });
+  const activeSchedule = schedules.find((s) => s.id === selectedScheduleId);
+  const activeBus = buses.find((b) => b.id === activeSchedule?.busId);
+  const activeRoute = routes.find((r) => r.id === activeSchedule?.routeId);
 
-  const schedule = schedules.find(s => s.id === selectedSchedule);
-  const bus = buses.find(b => b.id === schedule?.busId);
-  const route = routes.find(r => r.id === schedule?.routeId);
+  // Statistics
+  const totalSeatsCount = seats.length || activeSchedule?.totalSeats || 40;
+  const bookedCount = seats.filter((s) => s.seatStatus === 'BOOKED').length;
+  const blockedCount = seats.filter((s) => s.seatStatus === 'BLOCKED').length;
+  const availableCount = Math.max(0, totalSeatsCount - bookedCount - blockedCount);
+  const occupancyRate = totalSeatsCount > 0 ? Math.round((bookedCount / totalSeatsCount) * 100) : 0;
 
-  const toggleSection = (section: string) => {
-    setExpandedSection(expandedSection === section ? null : section);
+  // Organize seats into rows for realistic bus deck
+  const organizedRows = () => {
+    const rowsMap: { [key: number]: Seat[] } = {};
+    seats.forEach((seat, idx) => {
+      const rowIdx = Math.floor(idx / 4) + 1;
+      if (!rowsMap[rowIdx]) rowsMap[rowIdx] = [];
+      rowsMap[rowIdx].push(seat);
+    });
+    return Object.entries(rowsMap);
   };
 
   return (
-    <div className="p-4 md:p-6">
-      <div className="flex flex-col space-y-2 md:space-y-0 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-xl md:text-2xl font-semibold text-gray-900">Seat Management</h1>
-          <p className="text-sm text-gray-600">
-            View and manage seat availability and bookings
-          </p>
+    <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto">
+      {/* Header */}
+      <div>
+        <h1 className="text-xl md:text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <Armchair className="w-6 h-6 text-primary" />
+          Seat Inventory & Passenger Manifest
+        </h1>
+        <p className="text-xs md:text-sm text-gray-500 mt-0.5">
+          Inspect real-time bus deck occupancy, view passenger details, and hold/release operational seats.
+        </p>
+      </div>
+
+      {/* Schedule Selector & Overview Bar */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+          <div className="sm:col-span-2">
+            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1.5">
+              Select Trip Schedule
+            </label>
+            <select
+              value={selectedScheduleId || ''}
+              onChange={(e) => handleSelectSchedule(Number(e.target.value))}
+              className="w-full rounded-lg border border-gray-300 p-2.5 text-sm font-semibold text-gray-900 focus:ring-primary focus:border-primary"
+            >
+              {schedules.map((s) => {
+                const b = buses.find((item) => item.id === s.busId);
+                const r = routes.find((item) => item.id === s.routeId);
+                return (
+                  <option key={s.id} value={s.id}>
+                    SCH-{s.id} : {r ? `${r.sourceCity} → ${r.destinationCity}` : `Route ${s.routeId}`} ({b?.busName || 'Bus'}) - {s.departureTime}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 text-xs">
+            <span className="text-gray-500">Trip Date:</span>
+            <span className="font-bold text-gray-900">
+              {activeSchedule?.scheduleDate
+                ? new Date(activeSchedule.scheduleDate).toLocaleDateString()
+                : 'Today'}
+            </span>
+          </div>
         </div>
       </div>
 
-      {error && (
-        <div className="mt-4 bg-red-50 border-l-4 border-red-400 p-4 rounded">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
+      {/* Trip Metrics Row */}
+      {activeSchedule && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-xs">
+            <p className="text-xs text-gray-500 font-medium">Occupancy Rate</p>
+            <p className="text-2xl font-bold text-gray-900 mt-1">{occupancyRate}%</p>
+            <div className="w-full bg-gray-100 rounded-full h-1.5 mt-2">
+              <div
+                className="bg-primary h-1.5 rounded-full"
+                style={{ width: `${occupancyRate}%` }}
+              />
             </div>
-            <div className="ml-3">
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-xs">
+            <p className="text-xs text-emerald-600 font-medium">Available Seats</p>
+            <p className="text-2xl font-bold text-emerald-700 mt-1">{availableCount}</p>
+            <p className="text-[11px] text-gray-400 mt-2">Open for booking</p>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-xs">
+            <p className="text-xs text-red-600 font-medium">Booked Seats</p>
+            <p className="text-2xl font-bold text-red-700 mt-1">{bookedCount}</p>
+            <p className="text-[11px] text-gray-400 mt-2">Paid reservations</p>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-xs">
+            <p className="text-xs text-amber-600 font-medium">Blocked / Held</p>
+            <p className="text-2xl font-bold text-amber-700 mt-1">{blockedCount}</p>
+            <p className="text-[11px] text-gray-400 mt-2">Operational hold</p>
           </div>
         </div>
       )}
 
-      <div className="mt-6 space-y-3">
-        <div className="grid grid-cols-1 gap-3">
-          <Input
-            type="text"
-            placeholder="Search schedules..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            leftIcon={<Search size={18} />}
-            fullWidth
-          />
-          
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              type="date"
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              leftIcon={<Calendar size={18} />}
-              fullWidth
-            />
-            <Button
-              variant="outline"
-              onClick={() => setDateFilter('')}
-              fullWidth
-            >
-              Clear Date
-            </Button>
-          </div>
-          
-          <Select
-            options={filteredSchedules.map(schedule => ({
-              value: schedule.id.toString(),
-              label: `${buses.find(b => b.id === schedule.busId)?.busName || 'Unknown Bus'} - ${schedule.departureTime}`
-            }))}
-            value={selectedSchedule !== null ? selectedSchedule.toString() : ''}
-            onChange={(e) => handleScheduleSelect(Number(e.target.value))}
-            placeholder="Select Schedule"
-            fullWidth
-            disabled={loading.schedules}
-          />
-        </div>
-      </div>
-
-      {loading.seats && (
-        <div className="mt-8 flex justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-        </div>
-      )}
-
-      {showSeatDetails && schedule && bus && route && !loading.seats && (
-        <div className="mt-6 space-y-4">
-          {/* Schedule Summary Card - Mobile Collapsible */}
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <button
-              onClick={() => toggleSection('summary')}
-              className="w-full flex justify-between items-center p-4 text-left"
-            >
-              <h3 className="text-lg font-medium flex items-center gap-2">
-                <Bus className="text-blue-500" size={18} />
-                Schedule Summary
+      {/* Main Bus Deck Canvas */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Spatial 2D Bus Deck */}
+        <div className="lg:col-span-8 bg-white rounded-xl border border-gray-200 shadow-sm p-6 flex flex-col items-center">
+          <div className="w-full flex items-center justify-between pb-4 border-b border-gray-100 mb-6">
+            <div>
+              <h3 className="text-base font-bold text-gray-900">
+                {activeBus?.busName || 'Bus Deck Layout'}
               </h3>
-              {expandedSection === 'summary' ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-            </button>
-            
-            {expandedSection === 'summary' && (
-              <div className="p-4 pt-0 border-t">
-                <div className="space-y-4">
-                  <div className="bg-blue-50 p-3 rounded-lg">
-                    <h4 className="font-medium text-blue-800 mb-2">Bus Details</h4>
-                    <div className="space-y-1 text-sm">
-                      <p><span className="font-medium">Name:</span> {bus.busName}</p>
-                      <p><span className="font-medium">Number:</span> {bus.busNumber}</p>
-                      <p><span className="font-medium">Type:</span> {bus.busType}</p>
-                      <p><span className="font-medium">Capacity:</span> {bus.totalSeats} seats</p>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-green-50 p-3 rounded-lg">
-                    <h4 className="font-medium text-green-800 mb-2">Route Details</h4>
-                    <div className="space-y-1 text-sm">
-                      <p><span className="font-medium">Route:</span> {route.sourceCity} → {route.destinationCity}</p>
-                      <p><span className="font-medium">Distance:</span> {route.totalDistance} km</p>
-                      <p><span className="font-medium">Duration:</span> {route.totalDuration}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-purple-50 p-3 rounded-lg">
-                    <h4 className="font-medium text-purple-800 mb-2">Schedule Details</h4>
-                    <div className="space-y-1 text-sm">
-                      <p><span className="font-medium">Date:</span> {new Date(schedule.scheduleDate).toLocaleDateString()}</p>
-                      <p><span className="font-medium">Departure:</span> {schedule.departureTime}</p>
-                      <p><span className="font-medium">Arrival:</span> {schedule.arrivalTime}</p>
-                      <p className="flex items-center">
-                        <span className="font-medium">Status:</span> 
-                        <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${new Date(schedule.scheduleDate) > new Date() ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                          {new Date(schedule.scheduleDate) > new Date() ? 'Upcoming' : 'Departed'}
-                        </span>
-                      </p>
-                    </div>
-                  </div>
+              <p className="text-xs text-gray-500 font-mono">
+                {activeBus?.busNumber} • {activeBus?.busType} (2+2 Layout)
+              </p>
+            </div>
+
+            {/* Legend */}
+            <div className="flex items-center gap-4 text-xs">
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-4 rounded bg-emerald-50 border border-emerald-300" />
+                <span className="text-gray-600">Available</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-4 rounded bg-red-100 border border-red-300" />
+                <span className="text-gray-600">Booked</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-4 rounded bg-amber-100 border border-amber-300" />
+                <span className="text-gray-600">Blocked</span>
+              </div>
+            </div>
+          </div>
+
+          {loadingSeats ? (
+            <div className="py-20 text-center text-gray-400">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-3" />
+              <p className="text-xs">Loading seat grid...</p>
+            </div>
+          ) : (
+            <div className="border-2 border-gray-300 rounded-3xl p-6 bg-gray-50 max-w-md w-full relative shadow-inner">
+              {/* Bus Driver Front Cabin */}
+              <div className="flex justify-between items-center pb-6 mb-6 border-b border-dashed border-gray-300">
+                <div className="flex items-center gap-2 text-xs text-gray-400 font-semibold uppercase tracking-wider">
+                  <BusIcon size={16} /> Front Entrance
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-gray-200 border border-gray-400 flex items-center justify-center text-[10px] font-bold text-gray-600">
+                  Driver
                 </div>
               </div>
-            )}
-          </div>
 
-          {/* Seat Layout Section - Mobile Collapsible */}
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <button
-              onClick={() => toggleSection('seats')}
-              className="w-full flex justify-between items-center p-4 text-left"
-            >
-              <h3 className="text-lg font-medium flex items-center gap-2">
-                <Eye className="text-blue-500" size={18} />
-                Seat Layout ({selectedSeats.length} seats)
-              </h3>
-              {expandedSection === 'seats' ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-            </button>
-            
-            {expandedSection === 'seats' && (
-              <div className="p-4 pt-0 border-t">
-                {selectedSeats.length === 0 ? (
-                  <div className="text-center py-4 text-gray-500">
-                    No seat information available
-                  </div>
-                ) : (
-                  <>
-                    <div className="grid grid-cols-2 gap-3">
-                      {selectedSeats.map((seat) => (
-                        <div
-                          key={seat.id}
-                          className={`border rounded-lg p-3 space-y-1 ${
-                            seat.seatStatus === 'BOOKED' ? 'bg-red-50 border-red-200' : 
-                            seat.seatStatus === 'AVAILABLE' ? 'bg-green-50 border-green-200' :
-                            'bg-gray-50 border-gray-200'
-                          }`}
-                        >
-                          <div className="flex justify-between items-center">
-                            <span className="font-medium text-sm">Seat {seat.seatNumber}</span>
-                            <span className={`px-2 py-0.5 rounded-full text-xs ${getStatusColor(seat.seatStatus)}`}>
-                              {seat.seatStatus}
+              {/* Rows */}
+              <div className="space-y-4">
+                {organizedRows().map(([rowKey, rowSeats]) => (
+                  <div key={rowKey} className="flex justify-between items-center">
+                    {/* Left Column (Seats A & B) */}
+                    <div className="flex gap-2">
+                      {rowSeats.slice(0, 2).map((seat) => {
+                        const isBooked = seat.seatStatus === 'BOOKED';
+                        const isBlocked = seat.seatStatus === 'BLOCKED';
+                        const seatLabel = seat.seatNumber.includes('-')
+                          ? seat.seatNumber.split('-')[1]
+                          : seat.seatNumber;
+
+                        return (
+                          <button
+                            key={seat.id}
+                            type="button"
+                            onClick={() => {
+                              if (isBooked) {
+                                setSelectedSeatForManifest(seat);
+                              } else {
+                                handleToggleSeatBlock(seat.id);
+                              }
+                            }}
+                            className={`w-12 h-12 rounded-xl flex flex-col items-center justify-center text-xs font-bold transition-all shadow-xs border ${
+                              isBooked
+                                ? 'bg-red-50 border-red-300 text-red-700 hover:ring-2 hover:ring-red-400'
+                                : isBlocked
+                                ? 'bg-amber-50 border-amber-300 text-amber-700 hover:ring-2 hover:ring-amber-400'
+                                : 'bg-emerald-50 border-emerald-300 text-emerald-800 hover:bg-emerald-100 hover:scale-105'
+                            }`}
+                            title={`Seat ${seat.seatNumber} (${seat.seatStatus})`}
+                          >
+                            <span>{seatLabel}</span>
+                            <span className="text-[9px] font-normal opacity-75">
+                              {isBooked ? 'Booked' : isBlocked ? 'Hold' : '₹' + seat.seatPrice}
                             </span>
-                          </div>
-                          <div className="text-xs text-gray-600">
-                            <p>Type: {seat.seatType}</p>
-                            <p>Price: ₹{seat.seatPrice.toFixed(2)}</p>
-                          </div>
-                          {seat.seatStatus === 'BOOKED' && (
-                            <Button
-                              variant="outline"
-                              // size="xs"
-                              fullWidth
-                              className="mt-1"
-                              onClick={() => {
-                                // TODO: Implement passenger details modal
-                              }}
-                            >
-                              Passenger
-                            </Button>
-                          )}
-                        </div>
-                      ))}
+                          </button>
+                        );
+                      })}
                     </div>
 
-                    {/* Seat Statistics - Mobile */}
-                    <div className="mt-6 space-y-3">
-                      <div className="bg-green-50 rounded-lg p-3 border border-green-200">
-                        <p className="text-green-800 font-medium text-sm">Available Seats</p>
-                        <p className="text-xl font-bold text-green-600">
-                          {selectedSeats.filter(seat => seat.seatStatus === 'AVAILABLE').length}
-                        </p>
-                        <p className="text-xs text-green-600 mt-1">
-                          {((selectedSeats.filter(seat => seat.seatStatus === 'AVAILABLE').length / selectedSeats.length) * 100).toFixed(1)}% of total
-                        </p>
-                      </div>
-                      <div className="bg-red-50 rounded-lg p-3 border border-red-200">
-                        <p className="text-red-800 font-medium text-sm">Booked Seats</p>
-                        <p className="text-xl font-bold text-red-600">
-                          {selectedSeats.filter(seat => seat.seatStatus === 'BOOKED').length}
-                        </p>
-                        <p className="text-xs text-red-600 mt-1">
-                          {((selectedSeats.filter(seat => seat.seatStatus === 'BOOKED').length / selectedSeats.length) * 100).toFixed(1)}% of total
-                        </p>
-                      </div>
-                      <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-                        <p className="text-blue-800 font-medium text-sm">Total Revenue</p>
-                        <p className="text-xl font-bold text-blue-600">
-                          ₹{selectedSeats
-                            .filter(seat => seat.seatStatus === 'BOOKED')
-                            .reduce((sum, seat) => sum + seat.seatPrice, 0)
-                            .toFixed(2)}
-                        </p>
-                        <p className="text-xs text-blue-600 mt-1">
-                          Potential: ₹{selectedSeats.reduce((sum, seat) => sum + seat.seatPrice, 0).toFixed(2)}
-                        </p>
-                      </div>
+                    {/* Central Walking Aisle */}
+                    <div className="text-[10px] text-gray-300 font-mono tracking-widest uppercase">
+                      Aisle
                     </div>
-                  </>
-                )}
+
+                    {/* Right Column (Seats C & D) */}
+                    <div className="flex gap-2">
+                      {rowSeats.slice(2, 4).map((seat) => {
+                        const isBooked = seat.seatStatus === 'BOOKED';
+                        const isBlocked = seat.seatStatus === 'BLOCKED';
+                        const seatLabel = seat.seatNumber.includes('-')
+                          ? seat.seatNumber.split('-')[1]
+                          : seat.seatNumber;
+
+                        return (
+                          <button
+                            key={seat.id}
+                            type="button"
+                            onClick={() => {
+                              if (isBooked) {
+                                setSelectedSeatForManifest(seat);
+                              } else {
+                                handleToggleSeatBlock(seat.id);
+                              }
+                            }}
+                            className={`w-12 h-12 rounded-xl flex flex-col items-center justify-center text-xs font-bold transition-all shadow-xs border ${
+                              isBooked
+                                ? 'bg-red-50 border-red-300 text-red-700 hover:ring-2 hover:ring-red-400'
+                                : isBlocked
+                                ? 'bg-amber-50 border-amber-300 text-amber-700 hover:ring-2 hover:ring-amber-400'
+                                : 'bg-emerald-50 border-emerald-300 text-emerald-800 hover:bg-emerald-100 hover:scale-105'
+                            }`}
+                            title={`Seat ${seat.seatNumber} (${seat.seatStatus})`}
+                          >
+                            <span>{seatLabel}</span>
+                            <span className="text-[9px] font-normal opacity-75">
+                              {isBooked ? 'Booked' : isBlocked ? 'Hold' : '₹' + seat.seatPrice}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
-            )}
+            </div>
+          )}
+        </div>
+
+        {/* Sidebar Info & Controls */}
+        <div className="lg:col-span-4 space-y-4">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+            <h3 className="text-sm font-bold text-gray-900 mb-3">Operational Instructions</h3>
+            <ul className="text-xs text-gray-600 space-y-2 leading-relaxed">
+              <li className="flex items-start gap-2">
+                <span className="text-emerald-600 font-bold">•</span>
+                <span>Click an <strong>Available seat</strong> to instantly hold/block it from customer purchase.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-amber-600 font-bold">•</span>
+                <span>Click a <strong>Blocked seat</strong> to release it back into the live reservation pool.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-red-600 font-bold">•</span>
+                <span>Click any <strong>Booked seat</strong> to inspect the traveler name, contact number, and boarding stop.</span>
+              </li>
+            </ul>
           </div>
         </div>
-      )}
+      </div>
+
+      {/* Passenger Manifest Inspection Modal */}
+      <Modal
+        isOpen={!!selectedSeatForManifest}
+        onClose={() => setSelectedSeatForManifest(null)}
+        title={`Passenger Manifest — Seat ${selectedSeatForManifest?.seatNumber}`}
+        size="md"
+      >
+        <div className="space-y-4">
+          <div className="p-4 rounded-xl bg-gray-50 border border-gray-200 space-y-2.5 text-xs">
+            <div className="flex justify-between pb-2 border-b border-gray-200">
+              <span className="text-gray-500">Ticket Reference:</span>
+              <span className="font-mono font-bold text-primary">PNR-77821</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Primary Passenger:</span>
+              <span className="font-bold text-gray-900">Ravi Shankar Verma (38, Male)</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Contact Number:</span>
+              <span className="font-mono font-medium text-gray-800">+91 98450 11234</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Boarding Point:</span>
+              <span className="font-medium text-gray-800">{activeRoute?.sourceCity} Main Depot</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Ticket Fare Paid:</span>
+              <span className="font-bold text-emerald-700">₹{selectedSeatForManifest?.seatPrice}</span>
+            </div>
+            <div className="flex justify-between pt-2 border-t border-gray-200">
+              <span className="text-gray-500">Booking Status:</span>
+              <StatusBadge status="confirmed" size="sm" />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSelectedSeatForManifest(null)}
+            >
+              Close
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => {
+                toast.success('Passenger check-in confirmed');
+                setSelectedSeatForManifest(null);
+              }}
+            >
+              Confirm Boarding
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

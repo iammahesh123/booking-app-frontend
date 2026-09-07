@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Info, MapPin } from 'lucide-react';
+import { Info, MapPin, ArrowLeft } from 'lucide-react';
 import Button from '../ui/Button';
 import Select from '../ui/Select';
 import { Seat, Route } from '../../data/types';
 import { fetchCities } from '../../apiConfig/Bus';
 import { useAuth } from '../../context/AuthContext';
 import AuthModal from '../auth/AuthModal';
+import toast from 'react-hot-toast';
 
 interface SeatLayoutProps {
   scheduleId: number;
@@ -16,8 +17,8 @@ interface SeatLayoutProps {
   onSeatSelect: (seat: Seat) => void;
   onSeatDeselect: (seat: Seat) => void;
   selectedSeats: Seat[];
+  onBack?: () => void;
 }
-
 
 const SeatLayout: React.FC<SeatLayoutProps> = ({
   scheduleId,
@@ -26,7 +27,8 @@ const SeatLayout: React.FC<SeatLayoutProps> = ({
   route,
   onSeatSelect,
   onSeatDeselect,
-  selectedSeats
+  selectedSeats,
+  onBack
 }) => {
   const [hoveredSeat, setHoveredSeat] = useState<Seat | null>(null);
   const [sourceStop, setSourceStop] = useState<string>('');
@@ -123,15 +125,15 @@ const SeatLayout: React.FC<SeatLayoutProps> = ({
     }
   
     if (selectedSeats.length === 0) {
-      alert('Please select at least one seat to proceed.');
+      toast.error('Please select at least one seat to proceed.');
       return;
     }
     if (!sourceStop || !destinationStop) {
-      alert('Please select both boarding and dropping points.');
+      toast.error('Please select both boarding and dropping points.');
       return;
     }
     if (sourceStop === destinationStop) {
-      alert('Boarding and dropping points cannot be the same.');
+      toast.error('Boarding and dropping points cannot be the same.');
       return;
     }
 
@@ -172,15 +174,20 @@ const handleAuthModalClose = () => {
   const gstAmount = Math.round(totalAmount * gstPercentage);
   const finalTotalAmount = totalAmount + serviceFee + gstAmount;
 
-  // Get boarding and dropping point options
+  // Get boarding and dropping point options from route stops or cities
+  const routeStopOptions = (route?.stops || []).map(stop => ({
+    value: stop.stopName,
+    label: `${stop.stopName} (${stop.departureTime || stop.arrivalTime || ''})`
+  }));
+
   const boardingOptions = [
-    { value: route?.sourceCity || '', label: route?.sourceCity || '' },
-    ...cities.filter(city => city.value !== route?.sourceCity?.toLowerCase().replace(/\s+/g, '-'))
+    { value: route?.sourceCity || '', label: `${route?.sourceCity} (Main Departure)` },
+    ...routeStopOptions.filter(s => s.value !== route?.sourceCity)
   ];
 
   const droppingOptions = [
-    { value: route?.destinationCity || '', label: route?.destinationCity || '' },
-    ...cities.filter(city => city.value !== route?.destinationCity?.toLowerCase().replace(/\s+/g, '-'))
+    { value: route?.destinationCity || '', label: `${route?.destinationCity} (Main Terminal)` },
+    ...routeStopOptions.filter(s => s.value !== route?.destinationCity)
   ];
 
   if (!route) {
@@ -188,16 +195,41 @@ const handleAuthModalClose = () => {
       <div className="bg-white rounded-lg shadow-md p-8 text-center">
         <p className="text-lg text-gray-700 mb-2">Route information not available</p>
         <p className="text-sm text-gray-500">Please try selecting a different schedule or refresh the page.</p>
+        {onBack && (
+          <Button variant="outline" size="sm" onClick={onBack} className="mt-4" leftIcon={<ArrowLeft size={16} />}>
+            Back to Bus List
+          </Button>
+        )}
       </div>
     );
   }
 
   return (
     <>
-    <div className="bg-white rounded-lg shadow-md overflow-hidden">
-      <div className="p-4 border-b">
-        <h3 className="text-lg font-semibold">Select Your Seats</h3>
-        <p className="text-sm text-gray-500">Click on an available seat to select it</p>
+    <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+      <div className="p-4 border-b flex items-center justify-between bg-gray-50/50">
+        <div className="flex items-center gap-3">
+          {onBack && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onBack}
+              leftIcon={<ArrowLeft size={16} />}
+              className="h-9"
+            >
+              Back to Buses
+            </Button>
+          )}
+          <div>
+            <h3 className="text-lg font-bold text-gray-900">Select Your Seats</h3>
+            <p className="text-xs text-gray-500">Click on an available seat to reserve it</p>
+          </div>
+        </div>
+        <div className="text-right">
+          <span className="text-xs font-semibold text-primary uppercase tracking-wide bg-primary/10 px-2.5 py-1 rounded-full">
+            {route.sourceCity} → {route.destinationCity}
+          </span>
+        </div>
       </div>
 
       <div className="p-4 border-b bg-gray-50">

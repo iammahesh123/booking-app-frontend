@@ -33,9 +33,16 @@ const PassengerInfoPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   
-  const [passengers, setPassengers] = useState<Passenger[]>([
-    { name: '', age: '', gender: 'male' }
-  ]);
+  const [passengers, setPassengers] = useState<Passenger[]>(() => {
+    if (state?.selectedSeats && state.selectedSeats.length > 0) {
+      return state.selectedSeats.map((_, i) => ({
+        name: i === 0 && user?.name ? user.name : '',
+        age: '',
+        gender: 'male',
+      }));
+    }
+    return [{ name: user?.name || '', age: '', gender: 'male' }];
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -56,16 +63,16 @@ const PassengerInfoPage: React.FC = () => {
 
   if (!state?.selectedSeats) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-red-600">Invalid Access</h2>
-          <p className="mt-4">Please select seats before filling passenger information.</p>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="text-center max-w-md bg-white p-8 rounded-xl shadow-md border border-gray-100">
+          <h2 className="text-2xl font-bold text-gray-900">No Seats Selected</h2>
+          <p className="mt-3 text-sm text-gray-600">Please select seats before filling in passenger information.</p>
           <Button 
             variant="primary" 
             className="mt-6" 
             onClick={() => navigate('/')}
           >
-            Go Back Home
+            Find Buses
           </Button>
         </div>
       </div>
@@ -73,78 +80,79 @@ const PassengerInfoPage: React.FC = () => {
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setError(null);
-  setIsSubmitting(true);
+    e.preventDefault();
+    setError(null);
+    setIsSubmitting(true);
 
-  // Validate passenger data
-  if (passengers.length !== state.selectedSeats.length) {
-    setError('Number of passengers must match number of selected seats');
-    setIsSubmitting(false);
-    return;
-  }
-
-  for (const passenger of passengers) {
-    if (!passenger.name || !passenger.age) {
-      setError('Please fill all passenger details');
+    // Validate passenger data
+    if (passengers.length !== state.selectedSeats.length) {
+      setError(`Please provide details for all ${state.selectedSeats.length} passenger(s) corresponding to your selected seats.`);
       setIsSubmitting(false);
       return;
     }
-  }
 
-  try {
-    // Create passengers and collect their IDs
-    const passengerIds = [];
     for (let i = 0; i < passengers.length; i++) {
-      const passengerData = {
-        passengerName: passengers[i].name,
-        age: parseInt(passengers[i].age),
-        gender: passengers[i].gender,
-        seatNumber: state.selectedSeats[i].seatNumber,
-        busId: parseInt(scheduleId || '0')
-      };
-
-      const response = await createPassenger(passengerData);
-      passengerIds.push(response.id);
+      if (!passengers[i].name.trim() || !passengers[i].age) {
+        setError(`Please fill in all details for Passenger ${i + 1}.`);
+        setIsSubmitting(false);
+        return;
+      }
     }
 
-    // Create booking
-    const bookingData = {
-      userId:  user.email || 'maheshkadambala18@gmail.com', 
-      bookingDate: new Date().toISOString().split('T')[0], 
-      totalPrice: state.totalAmount,
-      bookingStatus: BookingStatus.CONFIRMED,
-      paymentStatus: PaymentStatus.PAID, 
-      seatIds: state.selectedSeats.map(seat => seat.id),
-      passengerIds: passengerIds,
-      busScheduleId: parseInt(scheduleId || '0')
-    };
-
-    const bookingResponse = await createBooking(bookingData);
-    
-    // Navigate to payment page with all necessary details
-    navigate('/payment', {
-      state: {
-        bookingId: bookingResponse.id,
-        passengers: passengers.map((p, i) => ({
-          ...p,
+    try {
+      // Create passengers and collect their IDs
+      const passengerIds = [];
+      for (let i = 0; i < passengers.length; i++) {
+        const passengerData = {
+          passengerName: passengers[i].name.trim(),
+          age: parseInt(passengers[i].age, 10),
+          gender: passengers[i].gender,
           seatNumber: state.selectedSeats[i].seatNumber,
-          seatPrice: state.selectedSeats[i].seatPrice
-        })),
-        selectedSeats: state.selectedSeats,
-        date: state.date,
-        source: state.source,
-        destination: state.destination,
-        totalAmount: state.totalAmount
+          busId: parseInt(scheduleId || '0', 10)
+        };
+
+        const response = await createPassenger(passengerData);
+        passengerIds.push(response.id);
       }
-    });
-  } catch (err) {
-    console.error('Booking failed:', err);
-    setError('Failed to complete booking. Please try again later.');
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+
+      // Create booking in PENDING state until payment is verified
+      const userIdentifier = user?.email || user?.id || `guest_${Date.now()}`;
+      const bookingData = {
+        userId: userIdentifier,
+        bookingDate: new Date().toISOString().split('T')[0], 
+        totalPrice: state.totalAmount,
+        bookingStatus: BookingStatus.PENDING,
+        paymentStatus: PaymentStatus.PENDING, 
+        seatIds: state.selectedSeats.map(seat => seat.id),
+        passengerIds: passengerIds,
+        busScheduleId: parseInt(scheduleId || '0', 10)
+      };
+
+      const bookingResponse = await createBooking(bookingData);
+      
+      // Navigate to payment page with all necessary details
+      navigate('/payment', {
+        state: {
+          bookingId: bookingResponse.id,
+          passengers: passengers.map((p, i) => ({
+            ...p,
+            seatNumber: state.selectedSeats[i].seatNumber,
+            seatPrice: state.selectedSeats[i].seatPrice
+          })),
+          selectedSeats: state.selectedSeats,
+          date: state.date,
+          source: state.source,
+          destination: state.destination,
+          totalAmount: state.totalAmount
+        }
+      });
+    } catch (err: any) {
+      console.error('Booking failed:', err);
+      setError(err?.message || 'Failed to complete booking. Please try again later.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <>

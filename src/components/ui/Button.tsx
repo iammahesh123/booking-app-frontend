@@ -24,11 +24,11 @@ const Button: React.FC<ButtonProps> = ({
   const baseClasses = 'inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none';
   
   const variantClasses = {
-    primary: 'bg-primary text-white hover:bg-primary-dark focus-visible:ring-primary',
-    secondary: 'bg-secondary text-white hover:bg-secondary-dark focus-visible:ring-secondary',
-    outline: 'border border-input bg-transparent hover:bg-primary hover:text-white',
-    ghost: 'hover:bg-accent hover:text-accent-foreground',
-    danger: 'bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-600',
+    primary: 'bg-primary text-white hover:bg-primary-dark focus-visible:ring-primary shadow-button',
+    secondary: 'bg-secondary text-white hover:bg-secondary-dark focus-visible:ring-secondary shadow-button',
+    outline: 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 focus-visible:ring-primary shadow-sm',
+    ghost: 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 focus-visible:ring-gray-400',
+    danger: 'bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-600 shadow-button',
   };
   
   const sizeClasses = {

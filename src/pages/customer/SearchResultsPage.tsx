@@ -131,7 +131,7 @@ const SearchResultsPage: React.FC = () => {
               onSeatSelect={handleSeatSelect}
               onSeatDeselect={handleSeatDeselect}
               selectedSeats={selectedSeats}
-              // onBack={handleBackToResults}
+              onBack={handleBackToResults}
             />
           ) : (
             <BusList

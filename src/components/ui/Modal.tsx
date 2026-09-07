@@ -1,52 +1,101 @@
 // components/ui/Modal.tsx
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 
 interface ModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    children: React.ReactNode;
-    title?: string;
-    size?: 'sm' | 'md' | 'lg';
-    className?: string;
+  isOpen: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+  title?: string;
+  description?: string;
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+  className?: string;
 }
 
-const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children, title, size = 'md', className = '' }) => {
-    if (!isOpen) return null;
+const Modal: React.FC<ModalProps> = ({
+  isOpen,
+  onClose,
+  children,
+  title,
+  description,
+  size = 'md',
+  className = '',
+}) => {
+  const modalRef = useRef<HTMLDivElement>(null);
 
-    const sizeClasses = {
-        sm: 'max-w-sm',
-        md: 'max-w-md',
-        lg: 'max-w-lg'
+  // Close on Escape key and lock body scroll
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
     };
 
-    const handleBackdropClick = (e: React.MouseEvent) => {
-        if (e.target === e.currentTarget) {
-            onClose();
-        }
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
     };
+  }, [isOpen, onClose]);
 
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-            onClick={handleBackdropClick}>
-            <div className={`bg-white rounded-lg shadow-xl w-full ${sizeClasses[size]} relative animate-fadeIn ${className}`}
-                onClick={(e) => e.stopPropagation()}>
+  if (!isOpen) return null;
 
-                {title && (
-                    <div className="flex items-center justify-between border-b p-4 pb-4">
-                        <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
-                        <button onClick={onClose} className="text-gray-500 hover:text-gray-700" aria-label="Close modal">
-                            <X size={24} />
-                        </button>
-                    </div>
-                )}
+  const sizeClasses = {
+    sm: 'max-w-sm',
+    md: 'max-w-md',
+    lg: 'max-w-lg',
+    xl: 'max-w-2xl',
+    '2xl': 'max-w-4xl',
+  };
 
-                <div className="p-4">
-                    {children}
-                </div>
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn"
+      onClick={handleBackdropClick}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={title ? 'modal-title' : undefined}
+    >
+      <div
+        ref={modalRef}
+        className={`bg-white rounded-xl shadow-2xl w-full ${sizeClasses[size]} relative overflow-hidden flex flex-col max-h-[90vh] ${className}`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {title && (
+          <div className="flex items-start justify-between border-b border-gray-100 px-6 py-4 bg-gray-50/50">
+            <div>
+              <h2 id="modal-title" className="text-xl font-bold text-gray-900">
+                {title}
+              </h2>
+              {description && (
+                <p className="text-sm text-gray-500 mt-1">{description}</p>
+              )}
             </div>
-        </div>
-    );
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-1.5 rounded-lg transition-colors ml-4"
+              aria-label="Close modal"
+            >
+              <X size={20} />
+            </button>
+          </div>
+        )}
+
+        <div className="p-6 overflow-y-auto">{children}</div>
+      </div>
+    </div>
+  );
 };
 
-export default Modal;
+export default Modal;

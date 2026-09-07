@@ -3,9 +3,6 @@ import { ArrowRight, Filter, ChevronsUpDown, Clock, Coffee, Wifi, PlugZap, Snowf
 import Button from '../ui/Button';
 import { Schedule, Bus, Route } from '../../data/types';
 import { busTypes, departureTimings } from '../../data/MockData';
-import { useAuth } from '../../context/AuthContext';
-import Modal from '../ui/Modal';
-import LoginForm from '../auth/LoginForm';
 
 interface BusListProps {
   schedules: Schedule[];
@@ -37,10 +34,6 @@ const BusList: React.FC<BusListProps> = ({ schedules, buses, routes, date, onSea
   const [departureTime, setDepartureTime] = useState('all');
   const [sortBy, setSortBy] = useState('departure');
   const [showStops, setShowStops] = useState(false);
-
-  const { isAuthenticated } = useAuth();
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
 
   const filteredSchedules = schedules.filter(schedule => {
     const bus = getBusDetails(schedule.busId, buses);
@@ -84,22 +77,8 @@ const BusList: React.FC<BusListProps> = ({ schedules, buses, routes, date, onSea
   });
 
   const handleViewSeats = (schedule: Schedule) => {
-    if (isAuthenticated) {
-      onSeatView(schedule);
-    } else {
-      setSelectedSchedule(schedule);
-      setShowLoginModal(true);
-    }
+    onSeatView(schedule);
   };
-
-  const handleLoginSuccess = () => {
-    setShowLoginModal(false);
-    if (selectedSchedule) {
-      onSeatView(selectedSchedule);
-    }
-  };
-
-  console.log('handleViewSeats called with schedule:', handleViewSeats);
 
   const getAmenityIcon = (amenity: string) => {
     switch (amenity.toLowerCase()) {
@@ -118,16 +97,6 @@ const BusList: React.FC<BusListProps> = ({ schedules, buses, routes, date, onSea
 
   return (
     <div className="space-y-4">
-      <Modal
-        isOpen={showLoginModal}
-        onClose={() => setShowLoginModal(false)}
-        title="Login Required"
-      >
-        <p className="mb-4 text-gray-600">
-          You need to login to view seat availability and book tickets.
-        </p>
-        <LoginForm onLoginSuccess={handleLoginSuccess} />
-      </Modal>
       <div className="bg-white rounded-lg shadow p-4">
         <div className="flex items-center justify-between">
           <div>
@@ -289,7 +258,7 @@ const BusList: React.FC<BusListProps> = ({ schedules, buses, routes, date, onSea
 
                 <div className="px-4 py-3 bg-gray-50 flex flex-col sm:flex-row items-start sm:items-center justify-between border-t border-gray-200">
                   <div className="flex flex-wrap gap-2 mb-3 sm:mb-0">
-                    {bus?.busAmenities.map((amenity, index) => (
+                    {(bus?.busAmenities || []).map((amenity, index) => (
                       <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                         {getAmenityIcon(amenity)}
                         <span className="ml-1">{amenity}</span>
@@ -302,7 +271,7 @@ const BusList: React.FC<BusListProps> = ({ schedules, buses, routes, date, onSea
                     size="sm"
                     onClick={() => handleViewSeats(schedule)}
                   >
-                    View Seats
+                    Select Seats
                   </Button>
                 </div>
 

@@ -16,6 +16,7 @@ import {
   X
 } from 'lucide-react';
 import { useMediaQuery } from 'react-responsive';
+import { useAuth } from '../../context/AuthContext';
 
 interface SidebarItemProps {
   to: string;
@@ -56,6 +57,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
 }) => {
   const location = useLocation();
   const isMobile = useMediaQuery({ maxWidth: 768 });
+  const { logout } = useAuth();
 
   // Close mobile sidebar when route changes
   useEffect(() => {
@@ -184,7 +186,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
         />
 
         <button
-          // onClick={logout}
+          onClick={logout}
           className={`flex items-center ${collapsed && !isMobile ? 'justify-center' : 'space-x-3 px-4'} py-3 rounded-md text-red-600 hover:bg-red-50 w-full text-left transition-colors`}
           title={collapsed && !isMobile ? "Logout" : undefined}
         >
